@@ -21,3 +21,6 @@
   - Dosya: Dockerfile (multi-stage, non-root, curl healthcheck), docker-compose.yml (api + postgres:17-alpine), .editorconfig, .gitignore, README.md, LICENSE (MIT), global.json (SDK 9.0.3xx), Directory.Build.props
 
 - Not: Çözüm Release modunda 0 uyarı / 0 hata ile derlendi. Entity, business logic ve Patient kavramı bilinçli olarak eklenmedi.
+
+- [Config] Git deposu oluşturuldu ve GitHub'a pushlandı
+  - Not: https://github.com/aydinysf/Medinsight — main dalı, ilk commit db9bf05 (25 dosya)
