@@ -24,3 +24,29 @@
 
 - [Config] Git deposu oluşturuldu ve GitHub'a pushlandı
   - Not: https://github.com/aydinysf/Medinsight — main dalı, ilk commit db9bf05 (25 dosya)
+
+- [Feature] Sprint 1 domain modeli eklendi (7 entity + 8 enum)
+  - Dosya: src/MedInsight.Domain/Entities/* (Patient, MedicalCase, Study, Series, MedicalDocument, Measurement, TimelineEvent), src/MedInsight.Domain/Enums/*, src/MedInsight.Domain/Common/Entity.cs
+  - Not: Tüm entity'lerde Guid Id + CreatedAtUtc, private setter, static Create fabrika metotları. Tanı/AI/öneri mantığı bilinçli olarak yok
+
+- [Feature] Persistence katmanı: DbSet'ler, Fluent API konfigürasyonları, indeksler
+  - Dosya: src/MedInsight.Infrastructure/Persistence/MedInsightDbContext.cs, Persistence/Configurations/* (7 sınıf)
+  - Not: timestamptz/date/numeric(18,4)/text kolon tipleri; istenen 7 indeks (Patient.FullName, MedicalCase.PatientId, Study MedicalCaseId+StudyDateUtc, Series.StudyId, MedicalDocument.MedicalCaseId, Measurement.MedicalCaseId, TimelineEvent MedicalCaseId+EventDateUtc). Study/Series silmede Measurement/Document FK'ları SET NULL, case silmede CASCADE
+
+- [Feature] Repository'ler + Application servisleri + DTO'lar
+  - Dosya: src/MedInsight.Application/Abstractions/Repositories/*, Patients/*, MedicalCases/*; src/MedInsight.Infrastructure/Repositories/*
+  - Not: IPatientRepository, IMedicalCaseRepository; CreatePatientService, CreateMedicalCaseService; record DTO'lar (DataAnnotations doğrulaması constructor parametresinde — property: hedefi MVC'de exception fırlatıyor)
+
+- [Feature] API endpoint'leri: POST/GET /patients, POST/GET /patients/{patientId}/cases
+  - Dosya: src/MedInsight.Api/Controllers/PatientsController.cs, MedicalCasesController.cs, Program.cs
+  - Not: JsonStringEnumConverter eklendi; canlı test edildi (201/200/404/400 senaryoları doğrulandı)
+
+- [DB Migration] InitialDomainModel migration'ı oluşturuldu ve uygulandı
+  - Dosya: src/MedInsight.Infrastructure/Migrations/20260705173633_InitialDomainModel.cs, .config/dotnet-tools.json (dotnet-ef 9.0.7 local tool)
+  - Not: Api projesine Microsoft.EntityFrameworkCore.Design eklendi; .editorconfig'e Migrations klasörü için generated_code muafiyeti eklendi
+
+- [Config] docker-compose ve bağlantı ayarları güncellendi
+  - Dosya: docker-compose.yml, src/MedInsight.Api/appsettings.json, src/MedInsight.Api/Program.cs
+  - Not: Host portu 5432→5434 (5432/5433 başka container'larda dolu); localhost yerine 127.0.0.1 (::1'i wslrelay yakalıyor, "Exception while reading from stream" hatası); Database:ApplyMigrationsOnStartup bayrağı eklendi, compose'da true
+
+- Not: Build 0 uyarı / 0 hata. Commit YAPILMADI (istenmedi).

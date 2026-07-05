@@ -41,3 +41,8 @@ dotnet_naming_style.prefix_interface_with_i.required_prefix = I
 dotnet_style_qualification_for_field = false:suggestion
 dotnet_style_qualification_for_property = false:suggestion
 dotnet_style_qualification_for_method = false:suggestion
+
+# EF Core generated migrations are exempt from style rules
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
