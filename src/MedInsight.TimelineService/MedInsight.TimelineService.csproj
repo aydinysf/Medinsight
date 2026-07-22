@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\MedInsight.Application\MedInsight.Application.csproj" />
+    <ProjectReference Include="..\MedInsight.Domain\MedInsight.Domain.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

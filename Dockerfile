@@ -5,9 +5,9 @@ COPY MedInsight.sln global.json Directory.Build.props ./
 COPY src/MedInsight.Domain/MedInsight.Domain.csproj src/MedInsight.Domain/
 COPY src/MedInsight.Application/MedInsight.Application.csproj src/MedInsight.Application/
 COPY src/MedInsight.Infrastructure/MedInsight.Infrastructure.csproj src/MedInsight.Infrastructure/
-COPY src/MedInsight.Shared/MedInsight.Shared.csproj src/MedInsight.Shared/
+COPY src/MedInsight.AIOrchestration/MedInsight.AIOrchestration.csproj src/MedInsight.AIOrchestration/
+COPY src/MedInsight.TimelineService/MedInsight.TimelineService.csproj src/MedInsight.TimelineService/
 COPY src/MedInsight.Dicom/MedInsight.Dicom.csproj src/MedInsight.Dicom/
-COPY src/MedInsight.Reporting/MedInsight.Reporting.csproj src/MedInsight.Reporting/
 COPY src/MedInsight.Api/MedInsight.Api.csproj src/MedInsight.Api/
 RUN dotnet restore MedInsight.sln
 

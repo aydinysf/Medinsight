@@ -1,5 +1,15 @@
 # Yapılanlar
 
+## 2026-07-21
+
+- [Docs] MVP yol haritası oluşturuldu (9 iş paketi, 5 milestone, Gantt)
+  - Dosya: docs/business/roadmap.md
+  - Not: project_arch dokümantasyon sentezinden türetildi; hedef 21 Tem – 16 Eki 2026. Commit henüz yapılmadı.
+
+- [Config] WP0: Dokümanlar docs/ altına taşındı, ADR-015 yazıldı, çözüm yapısı hizalandı
+  - Dosya: docs/** (60 md, overlay sırasıyla en güncel kopyalar), docs/adr/adr-015-dotnet-9-and-solution-structure.md, MedInsight.sln, Dockerfile, README.md, .gitignore
+  - Not: Shared + Reporting kaldırıldı; AIOrchestration + TimelineService eklendi (→ Domain); project_arch/ gitignore'a alındı (ham arşiv). Build 0 uyarı / 0 hata.
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

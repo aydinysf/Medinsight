@@ -12,15 +12,18 @@ It organizes, compares and analyzes medical records to help physicians and patie
 
 ```
 MedInsight.sln
+├── docs/                          # Canonical documentation (ADRs, domain, architecture, AI)
 └── src/
-    ├── MedInsight.Domain          # Enterprise/domain model. References nothing.
-    ├── MedInsight.Application     # Use cases, CQRS handlers, abstractions (IAiService). → Domain
-    ├── MedInsight.Infrastructure  # EF Core / PostgreSQL, external services. → Application, Domain
-    ├── MedInsight.Api             # HTTP host, Swagger, health checks. → Application, Infrastructure
-    ├── MedInsight.Dicom           # DICOM handling. → Domain
-    ├── MedInsight.Reporting       # Report generation. → Application
-    └── MedInsight.Shared          # Cross-cutting primitives. References nothing.
+    ├── MedInsight.Domain            # Aggregates, domain events, business rules. References nothing.
+    ├── MedInsight.Application       # Use cases (commands/queries), abstractions. → Domain
+    ├── MedInsight.Infrastructure    # EF Core / PostgreSQL, object storage. → Application, Domain
+    ├── MedInsight.AIOrchestration   # Hızır AI orchestration layer (ADR-015). → Domain
+    ├── MedInsight.TimelineService   # Passive event subscriber, append-only timeline (ADR-006). → Domain
+    ├── MedInsight.Dicom             # DICOM parsing/grouping for ingestion. → Domain
+    └── MedInsight.Api               # HTTP host, Swagger, health checks. → Application, Infrastructure
 ```
+
+Docs-first: code follows the documents in `docs/` — domain rule changes update the relevant `docs/domain/` file in the same PR, architectural decisions get an ADR first (see `docs/adr/`). The roadmap lives at `docs/business/roadmap.md`.
 
 Dependency rule: source code dependencies only point inward. `Domain` has no references; `Application` knows only `Domain`; `Infrastructure` implements `Application` abstractions.
 
