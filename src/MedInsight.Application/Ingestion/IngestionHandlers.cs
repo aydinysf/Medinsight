@@ -53,7 +53,7 @@ public sealed class OnDocumentClassifiedRunQuality(ICaseRepository cases, IObjec
             ? []
             : await storage.DownloadAsync(document.StorageKey, cancellationToken);
 
-        var report = qualityEngine.Evaluate(new QualityContext(medicalCase, document, content));
+        var report = await qualityEngine.EvaluateAsync(new QualityContext(medicalCase, document, content), cancellationToken);
         medicalCase.ScoreDocumentQuality(e.DocumentId, report.OverallScore, report.CriteriaScores, report.FailureReasons, report.IsSufficient);
 
         await cases.SaveChangesAsync(cancellationToken);

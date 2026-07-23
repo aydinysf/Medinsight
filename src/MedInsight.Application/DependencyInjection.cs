@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.AddSingleton<IQualityCriterion, DuplicatedFilesCriterion>();
         services.AddSingleton<IQualityCriterion, CompletenessCriterion>();
         services.AddSingleton<IQualityCriterion, DicomIntegrityCriterion>();
+        services.AddSingleton<IQualityCriterion, OcrScoreCriterion>();
         services.AddScoped<QualityEngine>();
 
         // Ingestion pipeline event aboneleri

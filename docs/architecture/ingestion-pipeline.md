@@ -98,6 +98,17 @@ Sınıflandırma ve gruplama tamamlandıktan sonra, her `MedicalDocument` veya
 Routing kararı, `RoutingDecided` event'i olarak kayda geçer — bu, bir belgenin
 neden belirli bir yola gittiğinin sonradan denetlenebilmesini sağlar.
 
+## Resumable Yükleme (MVP Yaklaşımı)
+
+Toplu yükleme kesintiye uğradığında istemci, kalan/tamamı dosyaları yeni bir
+istekle yeniden gönderir. Sunucu her dosyanın SHA-256 içerik hash'ini vakadaki
+mevcut belgelerle karşılaştırır: aynı içerik daha önce alınmışsa dosya yeniden
+depolanmaz ve işlenmez — mevcut belge `alreadyExisted` işaretiyle döner. Batch
+düzeyinde `Idempotency-Key` (bkz. `rate-limiting-idempotency.md`) ile birlikte
+bu, dosya düzeyinde güvenli devam ettirme sağlar. Chunk bazlı tekil büyük dosya
+yüklemesi (tus benzeri) Post-MVP'dir; DICOM toplu yüklemeleri çok sayıda küçük
+dosyadan oluştuğu için MVP'de dosya düzeyi yeterlidir.
+
 ## Hata Durumu — Sınıflandırılamayan Dosya
 
 Bir dosya hiçbir kategoriye uymuyorsa (örn. bozuk dosya, desteklenmeyen format),

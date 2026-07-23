@@ -37,4 +37,26 @@ public sealed class FoDicomMetadataReader : IDicomMetadataReader
             return null;
         }
     }
+
+    public DicomIntegrityInfo? ReadIntegrity(byte[] content)
+    {
+        try
+        {
+            using var stream = new MemoryStream(content, writable: false);
+            var dataset = DicomFile.Open(stream, FileReadOption.ReadAll).Dataset;
+
+            return new DicomIntegrityInfo(
+                HasPatientId: !string.IsNullOrWhiteSpace(dataset.GetSingleValueOrDefault(DicomTag.PatientID, string.Empty)),
+                HasStudyDate: dataset.Contains(DicomTag.StudyDate),
+                HasModality: !string.IsNullOrWhiteSpace(dataset.GetSingleValueOrDefault(DicomTag.Modality, string.Empty)));
+        }
+        catch (DicomException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
 }

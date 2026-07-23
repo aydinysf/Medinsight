@@ -7,9 +7,15 @@ public sealed record DicomFileMetadata(
     DateTime? StudyDate,
     int? SeriesNumber);
 
+/// <summary>DICOM Integrity kriteri için zorunlu metadata varlığı (bkz. document-quality-engine.md).</summary>
+public sealed record DicomIntegrityInfo(bool HasPatientId, bool HasStudyDate, bool HasModality);
+
 /// <summary>fo-dicom implementasyonu MedInsight.Dicom projesindedir.</summary>
 public interface IDicomMetadataReader
 {
     /// <summary>Geçerli DICOM değilse veya zorunlu UID'ler eksikse null döner.</summary>
     DicomFileMetadata? Read(byte[] content);
+
+    /// <summary>Dosya DICOM olarak ayrıştırılamıyorsa null döner.</summary>
+    DicomIntegrityInfo? ReadIntegrity(byte[] content);
 }

@@ -12,7 +12,7 @@ public interface IQualityCriterion
 
     bool AppliesTo(DocumentType documentType);
 
-    CriterionResult Evaluate(QualityContext context);
+    Task<CriterionResult> EvaluateAsync(QualityContext context, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Skor 0–1; başarısızsa hastaya gösterilebilir somut bir neden taşır.</summary>

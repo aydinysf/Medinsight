@@ -1,3 +1,5 @@
+using MedInsight.Application.Abstractions.Dicom;
+using MedInsight.Application.Abstractions.TextExtraction;
 using MedInsight.Domain.Cases;
 
 namespace MedInsight.Application.Quality.Criteria;
@@ -9,7 +11,7 @@ public sealed class DuplicatedFilesCriterion : IQualityCriterion
 
     public bool AppliesTo(DocumentType documentType) => true;
 
-    public CriterionResult Evaluate(QualityContext context)
+    public Task<CriterionResult> EvaluateAsync(QualityContext context, CancellationToken cancellationToken = default)
     {
         var isDuplicate = context.Document.ContentHash is not null
             && context.Case.Documents.Any(d =>
@@ -17,9 +19,9 @@ public sealed class DuplicatedFilesCriterion : IQualityCriterion
                 && d.ContentHash == context.Document.ContentHash
                 && d.Status != DocumentStatus.Rejected);
 
-        return isDuplicate
+        return Task.FromResult(isDuplicate
             ? new CriterionResult(0, "Bu dosya vakaya daha önce yüklenmiş görünüyor (aynı içerik).")
-            : new CriterionResult(1);
+            : new CriterionResult(1));
     }
 }
 
@@ -30,31 +32,73 @@ public sealed class CompletenessCriterion : IQualityCriterion
 
     public bool AppliesTo(DocumentType documentType) => true;
 
-    public CriterionResult Evaluate(QualityContext context) =>
-        context.Content.Length == 0 || context.Document.SizeBytes == 0
+    public Task<CriterionResult> EvaluateAsync(QualityContext context, CancellationToken cancellationToken = default) =>
+        Task.FromResult(context.Content.Length == 0 || context.Document.SizeBytes == 0
             ? new CriterionResult(0, "Dosya boş görünüyor.")
-            : new CriterionResult(1);
+            : new CriterionResult(1));
 }
 
 /// <summary>
-/// DICOM bütünlüğü — MVP dilim 1: preamble kontrolü. Zorunlu metadata alanları
-/// (PatientID, StudyDate, Modality) DICOM gruplama dilimiyle birlikte gelecek.
+/// DICOM bütünlüğü: zorunlu metadata alanlarının varlığı — PatientID, StudyDate,
+/// Modality (bkz. document-quality-engine.md).
 /// </summary>
-public sealed class DicomIntegrityCriterion : IQualityCriterion
+public sealed class DicomIntegrityCriterion(IDicomMetadataReader dicomReader) : IQualityCriterion
 {
     public string Name => "DicomIntegrity";
 
     public bool AppliesTo(DocumentType documentType) => documentType == DocumentType.DicomFile;
 
-    public CriterionResult Evaluate(QualityContext context)
+    public Task<CriterionResult> EvaluateAsync(QualityContext context, CancellationToken cancellationToken = default)
     {
-        var content = context.Content;
-        var hasPreamble = content.Length >= 132
-            && content[128] == (byte)'D' && content[129] == (byte)'I'
-            && content[130] == (byte)'C' && content[131] == (byte)'M';
+        var integrity = dicomReader.ReadIntegrity(context.Content);
+        if (integrity is null)
+        {
+            return Task.FromResult(new CriterionResult(0, "DICOM dosya yapısı doğrulanamadı."));
+        }
 
-        return hasPreamble
-            ? new CriterionResult(1)
-            : new CriterionResult(0, "DICOM dosya yapısı doğrulanamadı (DICM başlığı eksik).");
+        var missing = new List<string>();
+        if (!integrity.HasPatientId)
+        {
+            missing.Add("PatientID");
+        }
+
+        if (!integrity.HasStudyDate)
+        {
+            missing.Add("StudyDate");
+        }
+
+        if (!integrity.HasModality)
+        {
+            missing.Add("Modality");
+        }
+
+        if (missing.Count == 0)
+        {
+            return Task.FromResult(new CriterionResult(1));
+        }
+
+        var score = Math.Round(1 - (missing.Count / 3m), 4);
+        return Task.FromResult(new CriterionResult(score, $"Zorunlu DICOM alanları eksik: {string.Join(", ", missing)}."));
+    }
+}
+
+/// <summary>
+/// OCR motorunun kendi güven skoru (taranan PDF / fotoğraf). Stub sağlayıcı
+/// aktifken uygulanmaz — skor üretemeyen sağlayıcı belgeyi cezalandırmamalı.
+/// </summary>
+public sealed class OcrScoreCriterion(IOcrProvider ocrProvider) : IQualityCriterion
+{
+    public string Name => "OcrScore";
+
+    public bool AppliesTo(DocumentType documentType) =>
+        ocrProvider.Name != "Stub"
+        && documentType is DocumentType.ScannedReport or DocumentType.PhotoDocument;
+
+    public async Task<CriterionResult> EvaluateAsync(QualityContext context, CancellationToken cancellationToken = default)
+    {
+        var result = await ocrProvider.ExtractTextAsync(context.Content, cancellationToken);
+        return result.ConfidenceScore < 0.5m
+            ? new CriterionResult(result.ConfidenceScore, "Belge OCR ile güvenilir şekilde okunamadı — daha net bir tarama/fotoğraf yükleyin.")
+            : new CriterionResult(result.ConfidenceScore);
     }
 }

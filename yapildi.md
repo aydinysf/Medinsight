@@ -35,6 +35,11 @@
   - Not: DICOM gruplama StudyInstanceUID/SeriesInstanceUID üzerinden bul-veya-oluştur + bekleme penceresi (config: Ingestion:DicomGroupingWindowSeconds, dev 8sn/prod 120sn) → DICOMStudyGrouped. RoutingDecided: TextualReport/ScannedReport→TextExtraction, DicomFile→RadiologyInference, Photo→StorageOnly. Text Extraction: PdfPig (metin katmanlı PDF), IOcrProvider soyutlaması (Tesseract implementasyonu hazır, Ocr:Provider config; dev varsayılanı Stub — tessdata kurulumu gerekince Tesseract'a çevrilir). 73 birim testi. E2E: fo-dicom ile üretilmiş 3 gerçek DICOM (2 seri) + gerçek PDF → doğru gruplama (2 seri/3 kesit), doğru rotalar, PDF'ten metin çıkarıldı
   - Kalan (dilim 3+): resumable/chunked upload, DICOM Integrity'nin zorunlu tag kontrolü, OCR Score kriterinin kalite motoruna bağlanması
 
+- [Feature] WP3 dilim 3 (WP3 kapandı): resumable upload + DICOM Integrity tag kontrolü + OCR Score + kriter ağırlıkları
+  - Dosya: src/MedInsight.Application/{Documents/UploadDocuments.cs,Quality/**,Abstractions/Dicom}, src/MedInsight.Dicom/FoDicomMetadataReader.cs, docs/architecture/ingestion-pipeline.md (Resumable Yükleme bölümü eklendi), appsettings.json (Quality:Weights)
+  - Not: Resumable = SHA-256 içerik hash dedup — kesilen batch tekrarında aynı dosya yeniden işlenmez, alreadyExisted döner (canlı doğrulandı: 2. batch'te mükerrer yok). DicomIntegrity artık PatientID/StudyDate/Modality zorunlu tag'lerini fo-dicom ile kontrol ediyor. OcrScoreCriterion: OCR güven skoru kaliteye bağlandı (Stub sağlayıcıda uygulanmaz). Kriterler async + ağırlıklar config'ten (DicomIntegrity=3, OcrScore=2 — doküman önceliklerine göre). 73 birim testi
+  - Post-MVP'ye kalan: chunk bazlı tekil büyük dosya (tus benzeri), Missing Pages/Resolution/Contrast görüntü kriterleri
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

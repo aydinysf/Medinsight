@@ -12,7 +12,7 @@ public sealed record UploadFileInput(string FileName, string ContentType, byte[]
 
 public sealed record UploadDocuments(Guid CaseId, IReadOnlyList<UploadFileInput> Files);
 
-public sealed record UploadedDocumentDto(Guid DocumentId, string FileName, DocumentStatus Status);
+public sealed record UploadedDocumentDto(Guid DocumentId, string FileName, DocumentStatus Status, bool AlreadyExisted = false);
 
 public sealed record UploadDocumentsResultDto(Guid CaseId, IReadOnlyList<UploadedDocumentDto> Documents);
 
@@ -39,6 +39,17 @@ public sealed class UploadDocumentsHandler(ICaseRepository cases, IObjectStorage
         {
             var contentHash = Convert.ToHexString(SHA256.HashData(file.Content)).ToLowerInvariant();
             var safeName = Path.GetFileName(file.FileName);
+
+            // Resumable yükleme: kesilen batch tekrarlandığında aynı içerik yeniden
+            // işlenmez — mevcut belge döner (bkz. ingestion-pipeline.md).
+            var existing = medicalCase.Documents.FirstOrDefault(d =>
+                d.ContentHash == contentHash && d.Status != DocumentStatus.Rejected);
+            if (existing is not null)
+            {
+                results.Add(new UploadedDocumentDto(existing.Id, safeName, existing.Status, AlreadyExisted: true));
+                continue;
+            }
+
             var storageKey = $"cases/{medicalCase.Id}/{Guid.NewGuid():N}/{safeName}";
 
             using var stream = new MemoryStream(file.Content, writable: false);
