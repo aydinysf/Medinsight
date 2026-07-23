@@ -29,6 +29,11 @@ public sealed class MedicalDocument : Entity
     /// <summary>SHA-256 hex — Duplicated Files kalite kriteri için (bkz. document-quality-engine.md).</summary>
     public string? ContentHash { get; private set; }
 
+    /// <summary>Text Extraction Service çıktısı — Hızır'ın LLMTextAnalysis girdisi (bkz. text-extraction-service.md).</summary>
+    public string? ExtractedText { get; private set; }
+
+    public decimal? OcrConfidence { get; private set; }
+
     internal static MedicalDocument Create(
         Guid caseId,
         string title,
@@ -67,6 +72,12 @@ public sealed class MedicalDocument : Entity
     internal void MarkQualityChecked() => Status = DocumentStatus.QualityChecked;
 
     internal void Reject() => Status = DocumentStatus.Rejected;
+
+    internal void SetExtractedText(string text, decimal? ocrConfidence)
+    {
+        ExtractedText = text;
+        OcrConfidence = ocrConfidence;
+    }
 }
 
 /// <summary>Sınıflandırma tipleri — bkz. docs/architecture/ingestion-pipeline.md</summary>

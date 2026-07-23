@@ -1,8 +1,11 @@
 using MedInsight.Application.Abstractions.Auth;
 using MedInsight.Application.Abstractions.Repositories;
 using MedInsight.Application.Abstractions.Storage;
+using MedInsight.Application.Abstractions.TextExtraction;
 using MedInsight.Infrastructure.Auth;
+using MedInsight.Infrastructure.Ingestion;
 using MedInsight.Infrastructure.Persistence;
+using MedInsight.Infrastructure.TextExtraction;
 using MedInsight.Infrastructure.Persistence.Outbox;
 using MedInsight.Infrastructure.Repositories;
 using MedInsight.Infrastructure.Storage;
@@ -40,7 +43,18 @@ public static class DependencyInjection
         services.AddScoped<ICaseRepository, CaseRepository>();
         services.AddScoped<ITimelineStore, EfTimelineStore>();
 
+        services.AddSingleton<IPdfTextExtractor, PdfPigTextExtractor>();
+        if (string.Equals(configuration["Ocr:Provider"], "Tesseract", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddSingleton<IOcrProvider, TesseractOcrProvider>();
+        }
+        else
+        {
+            services.AddSingleton<IOcrProvider, StubOcrProvider>();
+        }
+
         services.AddHostedService<OutboxProcessor>();
+        services.AddHostedService<DicomGroupingWindowProcessor>();
 
         // IAiService implementation (Python AI service client) will be registered here.
         return services;

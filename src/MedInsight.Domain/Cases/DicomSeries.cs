@@ -16,7 +16,11 @@ public sealed class DicomSeries : Entity
 
     public string? Description { get; private set; }
 
-    internal static DicomSeries Create(Guid studyId, string? seriesInstanceUid, int? seriesNumber, string? description)
+    public Modality Modality { get; private set; }
+
+    public int SliceCount { get; private set; }
+
+    internal static DicomSeries Create(Guid studyId, string? seriesInstanceUid, int? seriesNumber, string? description, Modality modality = Modality.Unknown)
     {
         return new DicomSeries
         {
@@ -24,6 +28,9 @@ public sealed class DicomSeries : Entity
             SeriesInstanceUid = seriesInstanceUid,
             SeriesNumber = seriesNumber,
             Description = description,
+            Modality = modality,
         };
     }
+
+    internal void IncrementSliceCount() => SliceCount++;
 }

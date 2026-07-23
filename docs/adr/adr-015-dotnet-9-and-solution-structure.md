@@ -30,7 +30,9 @@ dokümanların beklediği `MedInsight.AIOrchestration` ve
    - `MedInsight.Dicom` kalır — ingestion hattındaki DICOM ayrıştırma/gruplama
      işleri için doğal ev (`ingestion-pipeline.md`); dokümanlardaki "object
      storage Infrastructure içinde" kuralıyla çelişmez, depolama değil
-     ayrıştırma sorumluluğu taşır.
+     ayrıştırma sorumluluğu taşır. Application'daki `IDicomMetadataReader`
+     soyutlamasını implemente ettiği için Application'a referans verir
+     (Infrastructure ile aynı "abstraction'ı dışarıda implemente et" deseni).
 
 ## Alternatifler
 

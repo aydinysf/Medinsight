@@ -5,6 +5,7 @@ using MedInsight.Api.Middleware;
 using MedInsight.Application;
 using MedInsight.Application.Abstractions.Auth;
 using MedInsight.Application.Quality;
+using MedInsight.Dicom;
 using MedInsight.Infrastructure;
 using MedInsight.Infrastructure.Persistence;
 using MedInsight.TimelineService;
@@ -20,6 +21,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddTimelineService();
+builder.Services.AddDicomServices();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();

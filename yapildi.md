@@ -30,6 +30,11 @@
   - Teknik not: EF Guid PK'ları varsayılan "store-generated" saydığından, izlenen Case'e eklenen yeni belgeler UPDATE sanılıyordu (DbUpdateConcurrencyException) — tüm Guid Id'ler ValueGeneratedNever yapıldı; Case sorgusu AsSplitQuery'e alındı
   - Kalan (dilim 2): DICOM gruplama (bekleme penceresi, fo-dicom), Text Extraction + IOcrProvider/Tesseract, RoutingDecided, resumable upload
 
+- [Feature] WP3 dilim 2: DICOM gruplama + Routing + Text Extraction (ADR-011)
+  - Dosya: src/MedInsight.Dicom/** (fo-dicom FoDicomMetadataReader — proje ilk gerçek işini aldı, → Application referansı ADR-015'e işlendi), src/MedInsight.Domain/Cases/{DicomStudy,DicomSeries,Case,MedicalDocument}.cs + Events/PipelineEvents.cs, src/MedInsight.Application/{Abstractions/{Dicom,TextExtraction},Ingestion/PipelineHandlers.cs}, src/MedInsight.Infrastructure/{Ingestion/DicomGroupingWindowProcessor.cs,TextExtraction/**}, Migrations/AddDicomGroupingAndTextExtraction
+  - Not: DICOM gruplama StudyInstanceUID/SeriesInstanceUID üzerinden bul-veya-oluştur + bekleme penceresi (config: Ingestion:DicomGroupingWindowSeconds, dev 8sn/prod 120sn) → DICOMStudyGrouped. RoutingDecided: TextualReport/ScannedReport→TextExtraction, DicomFile→RadiologyInference, Photo→StorageOnly. Text Extraction: PdfPig (metin katmanlı PDF), IOcrProvider soyutlaması (Tesseract implementasyonu hazır, Ocr:Provider config; dev varsayılanı Stub — tessdata kurulumu gerekince Tesseract'a çevrilir). 73 birim testi. E2E: fo-dicom ile üretilmiş 3 gerçek DICOM (2 seri) + gerçek PDF → doğru gruplama (2 seri/3 kesit), doğru rotalar, PDF'ten metin çıkarıldı
+  - Kalan (dilim 3+): resumable/chunked upload, DICOM Integrity'nin zorunlu tag kontrolü, OCR Score kriterinin kalite motoruna bağlanması
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

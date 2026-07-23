@@ -162,6 +162,70 @@ public sealed class Case : AggregateRoot
         }
     }
 
+    /// <summary>Toplu yüklemedeki her DICOM dosyası: study/series bul-veya-oluştur (bkz. ingestion-pipeline.md).</summary>
+    public DicomSeries RegisterDicomFile(
+        string studyInstanceUid,
+        string seriesInstanceUid,
+        Modality modality,
+        DateTime? studyDateUtc = null,
+        int? seriesNumber = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(studyInstanceUid);
+        ArgumentException.ThrowIfNullOrWhiteSpace(seriesInstanceUid);
+
+        var study = _dicomStudies.FirstOrDefault(s => s.StudyInstanceUid == studyInstanceUid);
+        if (study is null)
+        {
+            study = DicomStudy.Create(Id, modality, studyDateUtc ?? DateTime.UtcNow, studyInstanceUid);
+            _dicomStudies.Add(study);
+        }
+
+        return study.RegisterFile(seriesInstanceUid, modality, seriesNumber);
+    }
+
+    /// <summary>Bekleme penceresi kapandı: grup tamamlandı sayılır, DICOMStudyGrouped yayınlanır.</summary>
+    public void CompleteDicomGrouping(Guid studyId)
+    {
+        var study = _dicomStudies.FirstOrDefault(s => s.Id == studyId)
+            ?? throw new DomainException("Çalışma bu vakada bulunamadı.");
+
+        study.MarkGrouped();
+        Raise(new DicomStudyGrouped
+        {
+            CaseId = Id,
+            StudyId = studyId,
+            SeriesList = study.Series
+                .Select(s => new GroupedSeriesInfo { SeriesId = s.Id, Modality = s.Modality, SliceCount = s.SliceCount })
+                .ToList(),
+        });
+    }
+
+    /// <summary>Kaliteden geçen belge için işleme yolu kararı — denetlenebilir kayıt (RoutingDecided).</summary>
+    public DocumentRoute DecideRouting(Guid documentId)
+    {
+        var document = GetDocument(documentId);
+        if (document.Status != DocumentStatus.QualityChecked)
+        {
+            throw new DomainException("Yönlendirme yalnızca kalite kontrolünden geçmiş belge için yapılabilir.");
+        }
+
+        var route = document.Type switch
+        {
+            DocumentType.TextualReport or DocumentType.ScannedReport => DocumentRoute.TextExtraction,
+            DocumentType.DicomFile => DocumentRoute.RadiologyInference,
+            _ => DocumentRoute.StorageOnly,
+        };
+
+        Raise(new RoutingDecided { CaseId = Id, DocumentId = documentId, Route = route });
+        return route;
+    }
+
+    public void StoreExtractedText(Guid documentId, string text, decimal? ocrConfidence = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        GetDocument(documentId).SetExtractedText(text, ocrConfidence);
+    }
+
     private MedicalDocument GetDocument(Guid documentId) =>
         _documents.FirstOrDefault(d => d.Id == documentId)
             ?? throw new DomainException("Belge bu vakada bulunamadı.");

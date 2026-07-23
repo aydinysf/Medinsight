@@ -33,6 +33,9 @@ public static class DependencyInjection
         // Ingestion pipeline event aboneleri
         services.AddScoped<IDomainEventHandler<DocumentUploaded>, OnDocumentUploadedClassify>();
         services.AddScoped<IDomainEventHandler<DocumentClassified>, OnDocumentClassifiedRunQuality>();
+        services.AddScoped<IDomainEventHandler<DocumentClassified>, OnDocumentClassifiedGroupDicom>();
+        services.AddScoped<IDomainEventHandler<DocumentQualityScored>, OnDocumentQualityScoredRoute>();
+        services.AddScoped<IDomainEventHandler<RoutingDecided>, OnRoutingDecidedExtractText>();
 
         return services;
     }
