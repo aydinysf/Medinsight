@@ -15,6 +15,7 @@ public sealed class CaseRepository(MedInsightDbContext db) : ICaseRepository
             .Include(c => c.Documents)
             .Include(c => c.DicomStudies).ThenInclude(s => s.Series)
             .Include(c => c.Measurements)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<Case>> GetByPatientIdAsync(Guid patientId, CancellationToken cancellationToken = default) =>

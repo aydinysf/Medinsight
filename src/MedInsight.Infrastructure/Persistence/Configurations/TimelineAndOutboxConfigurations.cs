@@ -1,9 +1,20 @@
 using MedInsight.Infrastructure.Persistence.Outbox;
+using MedInsight.Infrastructure.Storage;
 using MedInsight.TimelineService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace MedInsight.Infrastructure.Persistence.Configurations;
+
+public sealed class IdempotencyRecordConfiguration : IEntityTypeConfiguration<IdempotencyRecord>
+{
+    public void Configure(EntityTypeBuilder<IdempotencyRecord> builder)
+    {
+        builder.HasKey(r => r.Key);
+        builder.Property(r => r.Key).HasMaxLength(200);
+        builder.Property(r => r.ResponseJson).HasColumnType("jsonb").IsRequired();
+    }
+}
 
 public sealed class TimelineEntryConfiguration : IEntityTypeConfiguration<TimelineEntry>
 {

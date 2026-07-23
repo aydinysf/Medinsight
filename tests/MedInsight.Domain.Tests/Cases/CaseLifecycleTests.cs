@@ -22,8 +22,8 @@ public class CaseLifecycleTests
             return medicalCase;
         }
 
-        document.MarkQualityChecked();
-        medicalCase.StartAiAnalysis();
+        medicalCase.ClassifyDocument(document.Id, DocumentType.TextualReport);
+        medicalCase.ScoreDocumentQuality(document.Id, 1m, new Dictionary<string, decimal> { ["Completeness"] = 1m }, [], isSufficient: true);
         if (status == CaseStatus.AIAnalysis)
         {
             return medicalCase;

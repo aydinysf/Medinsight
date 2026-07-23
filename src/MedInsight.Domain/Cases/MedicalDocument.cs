@@ -18,7 +18,26 @@ public sealed class MedicalDocument : Entity
 
     public Guid UploadedByUserId { get; private set; }
 
-    internal static MedicalDocument Create(Guid caseId, string title, Guid uploadedByUserId)
+    public string? StorageKey { get; private set; }
+
+    public string? OriginalFileName { get; private set; }
+
+    public string? ContentType { get; private set; }
+
+    public long SizeBytes { get; private set; }
+
+    /// <summary>SHA-256 hex — Duplicated Files kalite kriteri için (bkz. document-quality-engine.md).</summary>
+    public string? ContentHash { get; private set; }
+
+    internal static MedicalDocument Create(
+        Guid caseId,
+        string title,
+        Guid uploadedByUserId,
+        string? storageKey = null,
+        string? originalFileName = null,
+        string? contentType = null,
+        long sizeBytes = 0,
+        string? contentHash = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
@@ -29,18 +48,25 @@ public sealed class MedicalDocument : Entity
             Type = DocumentType.Unknown,
             Status = DocumentStatus.Uploaded,
             UploadedByUserId = uploadedByUserId,
+            StorageKey = storageKey,
+            OriginalFileName = originalFileName,
+            ContentType = contentType,
+            SizeBytes = sizeBytes,
+            ContentHash = contentHash,
         };
     }
 
-    public void Classify(DocumentType type)
+    internal void Classify(DocumentType type)
     {
         Type = type;
         Status = DocumentStatus.Classified;
     }
 
-    public void MarkQualityChecked() => Status = DocumentStatus.QualityChecked;
+    internal void MarkClassificationFailed() => Status = DocumentStatus.ClassificationFailed;
 
-    public void Reject() => Status = DocumentStatus.Rejected;
+    internal void MarkQualityChecked() => Status = DocumentStatus.QualityChecked;
+
+    internal void Reject() => Status = DocumentStatus.Rejected;
 }
 
 /// <summary>Sınıflandırma tipleri — bkz. docs/architecture/ingestion-pipeline.md</summary>
@@ -59,4 +85,5 @@ public enum DocumentStatus
     Classified = 1,
     QualityChecked = 2,
     Rejected = 3,
+    ClassificationFailed = 4,
 }

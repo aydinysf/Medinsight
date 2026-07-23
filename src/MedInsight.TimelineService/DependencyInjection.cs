@@ -13,6 +13,9 @@ public static class DependencyInjection
         services.AddScoped<IDomainEventHandler<CaseStatusChanged>, OnCaseStatusChanged>();
         services.AddScoped<IDomainEventHandler<CaseReopened>, OnCaseReopened>();
         services.AddScoped<IDomainEventHandler<DocumentUploaded>, OnDocumentUploaded>();
+        services.AddScoped<IDomainEventHandler<DocumentClassified>, OnDocumentClassified>();
+        services.AddScoped<IDomainEventHandler<DocumentClassificationFailed>, OnDocumentClassificationFailed>();
+        services.AddScoped<IDomainEventHandler<DocumentQualityScored>, OnDocumentQualityScored>();
 
         return services;
     }

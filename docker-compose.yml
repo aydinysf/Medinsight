@@ -11,8 +11,14 @@ services:
       ConnectionStrings__MedInsightDb: Host=postgres;Port=5432;Database=medinsight;Username=medinsight;Password=medinsight
       Database__ApplyMigrationsOnStartup: "true"
       Jwt__Key: dev-only-medinsight-signing-key-change-in-production-0000
+      Storage__Endpoint: minio:9000
+      Storage__AccessKey: medinsight
+      Storage__SecretKey: medinsight123
+      Storage__UseSsl: "false"
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     networks:
       - medinsight
@@ -36,8 +42,29 @@ services:
     networks:
       - medinsight
 
+  minio:
+    image: minio/minio:latest
+    container_name: medinsight-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: medinsight
+      MINIO_ROOT_PASSWORD: medinsight123
+    ports:
+      - "9500:9000"
+      - "9501:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medinsight
+
 volumes:
   postgres-data:
+  minio-data:
 
 networks:
   medinsight:

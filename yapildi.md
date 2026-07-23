@@ -24,6 +24,12 @@
   - Dosya: docs/adr/adr-016-mvp-authentication.md, docs/domain/erd-identity-case.md (users: +role, +password_hash), src/MedInsight.Domain/Identity/User.cs, src/MedInsight.Application/{Abstractions/Auth,Auth,Common,Cases,Patients}/**, src/MedInsight.Infrastructure/Auth/**, src/MedInsight.Api/{Auth,Controllers,Middleware}/**, Migrations/AddAuthFieldsToUsers
   - Not: POST /api/v1/auth/login → JWT (userId+role claim); rol katmanı [Authorize(Roles)], kaynak katmanı handler'larda ICurrentUser ile (vaka üyeliği/sahiplik). PasswordHasher = ASP.NET Identity PBKDF2. ForbiddenAccessException→403. Canlı test: 401 (tokensiz/yanlış parola), 403 (başka profil/vaka/başkası adına), 200 (sahibi). 37 birim testi geçti. Jwt:Key dev değeri appsettings'te — üretimde secrets manager (docs/architecture/security-architecture.md)
 
+- [Feature] WP3 dilim 1: Belge alma hattı — MinIO + bulk upload + sınıflandırma + kalite motoru
+  - Dosya: docker-compose.yml (minio servisi, host 9500/9501), src/MedInsight.Application/{Abstractions/Storage,Documents,Ingestion,Quality}/**, src/MedInsight.Infrastructure/Storage/**, src/MedInsight.Api/Controllers/DocumentsController.cs, src/MedInsight.TimelineService/Handlers/IngestionTimelineHandlers.cs, Migrations/AddDocumentFileMetadataAndIdempotency
+  - Not: POST /api/v1/cases/{id}/documents (multipart bulk, 202 Accepted, Idempotency-Key destekli); IObjectStorage soyutlaması → MinioObjectStorage (S3-uyumlu, sağlayıcı değişimi config); kural tabanlı DocumentClassifier (DICM magic, PDF metin katmanı sezgiseli, görüntü MIME); Quality Engine plugin mimarisi (DuplicatedFiles/Completeness/DicomIntegrity, eşik config'ten); yeterli skor CollectingData→AIAnalysis geçişini tetikler; sınıflandırılamayan dosya ClassificationFailed + event (sessiz yok sayma yok). 55 birim testi. Uçtan uca canlı test: 3 dosya → doğru sınıf/skor/timeline (11 kayıt), idempotent tekrar → belge sayısı sabit
+  - Teknik not: EF Guid PK'ları varsayılan "store-generated" saydığından, izlenen Case'e eklenen yeni belgeler UPDATE sanılıyordu (DbUpdateConcurrencyException) — tüm Guid Id'ler ValueGeneratedNever yapıldı; Case sorgusu AsSplitQuery'e alındı
+  - Kalan (dilim 2): DICOM gruplama (bekleme penceresi, fo-dicom), Text Extraction + IOcrProvider/Tesseract, RoutingDecided, resumable upload
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

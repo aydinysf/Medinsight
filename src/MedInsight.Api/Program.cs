@@ -4,6 +4,7 @@ using MedInsight.Api.Auth;
 using MedInsight.Api.Middleware;
 using MedInsight.Application;
 using MedInsight.Application.Abstractions.Auth;
+using MedInsight.Application.Quality;
 using MedInsight.Infrastructure;
 using MedInsight.Infrastructure.Persistence;
 using MedInsight.TimelineService;
@@ -22,6 +23,7 @@ builder.Services.AddTimelineService();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+builder.Services.Configure<QualityOptions>(builder.Configuration.GetSection(QualityOptions.SectionName));
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("'Jwt:Key' yapılandırılmamış.");

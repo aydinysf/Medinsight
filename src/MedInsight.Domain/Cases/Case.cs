@@ -82,14 +82,21 @@ public sealed class Case : AggregateRoot
     }
 
     /// <summary>İlk belge Draft → CollectingData geçişini tetikler. Invariant 5: Closed vakaya belge eklenemez.</summary>
-    public MedicalDocument AddDocument(string title, Guid uploadedByUserId)
+    public MedicalDocument AddDocument(
+        string title,
+        Guid uploadedByUserId,
+        string? storageKey = null,
+        string? originalFileName = null,
+        string? contentType = null,
+        long sizeBytes = 0,
+        string? contentHash = null)
     {
         if (Status == CaseStatus.Closed)
         {
             throw new DomainException("Kapalı vakaya belge eklenemez — önce FollowUp ile yeniden açılmalı.");
         }
 
-        var document = MedicalDocument.Create(Id, title, uploadedByUserId);
+        var document = MedicalDocument.Create(Id, title, uploadedByUserId, storageKey, originalFileName, contentType, sizeBytes, contentHash);
         _documents.Add(document);
         Raise(new DocumentUploaded { CaseId = Id, DocumentId = document.Id, DocumentType = document.Type, UploadedByUserId = uploadedByUserId });
 
@@ -100,6 +107,64 @@ public sealed class Case : AggregateRoot
 
         return document;
     }
+
+    /// <summary>Ingestion pipeline 1. aşama: kural tabanlı sınıflandırma sonucu (bkz. ingestion-pipeline.md).</summary>
+    public void ClassifyDocument(Guid documentId, DocumentType type)
+    {
+        var document = GetDocument(documentId);
+        document.Classify(type);
+        Raise(new DocumentClassified { CaseId = Id, DocumentId = documentId, DocumentType = type });
+    }
+
+    /// <summary>Sınıflandırılamayan dosya sessizce yok sayılmaz — hasta yeniden yükleme için bilgilendirilir.</summary>
+    public void MarkDocumentClassificationFailed(Guid documentId, string reason)
+    {
+        var document = GetDocument(documentId);
+        document.MarkClassificationFailed();
+        Raise(new DocumentClassificationFailed { CaseId = Id, DocumentId = documentId, Reason = reason });
+    }
+
+    /// <summary>
+    /// Kalite skoru işlenir; yeterliyse belge analiz kuyruğuna hazır olur ve
+    /// CollectingData → AIAnalysis geçişi tetiklenir (state machine kuralı).
+    /// </summary>
+    public void ScoreDocumentQuality(
+        Guid documentId,
+        decimal overallScore,
+        IReadOnlyDictionary<string, decimal> criteriaScores,
+        IReadOnlyList<string> failureReasons,
+        bool isSufficient)
+    {
+        var document = GetDocument(documentId);
+
+        if (isSufficient)
+        {
+            document.MarkQualityChecked();
+        }
+        else
+        {
+            document.Reject();
+        }
+
+        Raise(new DocumentQualityScored
+        {
+            CaseId = Id,
+            DocumentId = documentId,
+            OverallScore = overallScore,
+            CriteriaScores = new Dictionary<string, decimal>(criteriaScores),
+            FailureReasons = [.. failureReasons],
+            IsSufficient = isSufficient,
+        });
+
+        if (isSufficient && Status == CaseStatus.CollectingData)
+        {
+            TransitionTo(CaseStatus.AIAnalysis, "Belge kalite kontrolünden geçti");
+        }
+    }
+
+    private MedicalDocument GetDocument(Guid documentId) =>
+        _documents.FirstOrDefault(d => d.Id == documentId)
+            ?? throw new DomainException("Belge bu vakada bulunamadı.");
 
     public DicomStudy AddDicomStudy(Modality modality, DateTime studyDateUtc, string? studyInstanceUid = null, string? description = null)
     {

@@ -1,9 +1,11 @@
 using MedInsight.Application.Abstractions.Auth;
 using MedInsight.Application.Abstractions.Repositories;
+using MedInsight.Application.Abstractions.Storage;
 using MedInsight.Infrastructure.Auth;
 using MedInsight.Infrastructure.Persistence;
 using MedInsight.Infrastructure.Persistence.Outbox;
 using MedInsight.Infrastructure.Repositories;
+using MedInsight.Infrastructure.Storage;
 using MedInsight.Infrastructure.Timeline;
 using MedInsight.TimelineService;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +32,8 @@ public static class DependencyInjection
 
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddSingleton<IObjectStorage, MinioObjectStorage>();
+        services.AddScoped<IIdempotencyStore, EfIdempotencyStore>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPatientRepository, PatientRepository>();

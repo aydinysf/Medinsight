@@ -1,6 +1,12 @@
 using MedInsight.Application.Auth;
 using MedInsight.Application.Cases;
+using MedInsight.Application.Documents;
+using MedInsight.Application.Ingestion;
 using MedInsight.Application.Patients;
+using MedInsight.Application.Quality;
+using MedInsight.Application.Quality.Criteria;
+using MedInsight.Domain.Cases.Events;
+using MedInsight.Domain.Common;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MedInsight.Application;
@@ -15,6 +21,18 @@ public static class DependencyInjection
         services.AddScoped<CreateCaseHandler>();
         services.AddScoped<GetCaseQueryHandler>();
         services.AddScoped<GetPatientCasesQueryHandler>();
+        services.AddScoped<UploadDocumentsHandler>();
+        services.AddScoped<GetCaseDocumentsQueryHandler>();
+
+        // Document Quality Engine — her kriter bağımsız plugin (document-quality-engine.md)
+        services.AddSingleton<IQualityCriterion, DuplicatedFilesCriterion>();
+        services.AddSingleton<IQualityCriterion, CompletenessCriterion>();
+        services.AddSingleton<IQualityCriterion, DicomIntegrityCriterion>();
+        services.AddScoped<QualityEngine>();
+
+        // Ingestion pipeline event aboneleri
+        services.AddScoped<IDomainEventHandler<DocumentUploaded>, OnDocumentUploadedClassify>();
+        services.AddScoped<IDomainEventHandler<DocumentClassified>, OnDocumentClassifiedRunQuality>();
 
         return services;
     }

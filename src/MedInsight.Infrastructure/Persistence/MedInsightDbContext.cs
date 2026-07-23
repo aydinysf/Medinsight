@@ -32,9 +32,24 @@ public sealed class MedInsightDbContext(DbContextOptions<MedInsightDbContext> op
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
+    public DbSet<Storage.IdempotencyRecord> IdempotencyRecords => Set<Storage.IdempotencyRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(MedInsightDbContext).Assembly);
+
+        // Id'ler her zaman domain'de üretilir (Entity taban sınıfı). ValueGeneratedNever
+        // olmadan EF, izlenen aggregate'e sonradan eklenen çocukları "mevcut" sanıp
+        // INSERT yerine UPDATE üretir (DbUpdateConcurrencyException).
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            var id = entityType.FindProperty("Id");
+            if (id is not null && id.ClrType == typeof(Guid))
+            {
+                id.ValueGenerated = Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.Never;
+            }
+        }
+
         base.OnModelCreating(modelBuilder);
     }
 }
