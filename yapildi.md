@@ -10,6 +10,13 @@
   - Dosya: docs/** (60 md, overlay sırasıyla en güncel kopyalar), docs/adr/adr-015-dotnet-9-and-solution-structure.md, MedInsight.sln, Dockerfile, README.md, .gitignore
   - Not: Shared + Reporting kaldırıldı; AIOrchestration + TimelineService eklendi (→ Domain); project_arch/ gitignore'a alındı (ham arşiv). Build 0 uyarı / 0 hata.
 
+## 2026-07-23
+
+- [Feature] WP1: Çekirdek omurga — Case aggregate + domain events + outbox + Timeline + Identity
+  - Dosya: src/MedInsight.Domain/{Common,Cases,Identity}/**, src/MedInsight.TimelineService/**, src/MedInsight.Infrastructure/{Persistence,Repositories,Timeline}/**, src/MedInsight.Api/{Controllers,Middleware}/**, tests/MedInsight.Domain.Tests/**
+  - Not: Case tek aggregate root (ADR-001), 7 durumlu state machine (Draft→...→Closed, Reopen→FollowUp); her geçiş CaseStatusChanged üretir. Domain event zarfı + outbox (jsonb) + OutboxProcessor (at-least-once, idempotent handler). Timeline pasif abone (ADR-006). Identity: users/patients/doctors/caregivers + case_members. Tablolar snake_case (EFCore.NamingConventions). Kavram bazlı Domain klasörleri. API /api/v1 önekine geçti; DomainException→409. Migration reset: InitialSchema. 18 domain testi geçti; uçtan uca smoke test (hasta→vaka→outbox→timeline) doğrulandı.
+  - Teknik not: Domain event'lerde ctor + [JsonConstructor] yerine required init property kullanıldı — nullable CaseId zarfı ctor parametresine bağlanamıyordu (STJ "must bind" hatası)
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

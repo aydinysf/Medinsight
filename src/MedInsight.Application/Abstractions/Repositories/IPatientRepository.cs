@@ -1,4 +1,4 @@
-using MedInsight.Domain.Entities;
+using MedInsight.Domain.Identity;
 
 namespace MedInsight.Application.Abstractions.Repositories;
 

@@ -1,4 +1,4 @@
-using MedInsight.Application.MedicalCases;
+using MedInsight.Application.Cases;
 using MedInsight.Application.Patients;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,8 +8,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddScoped<CreatePatientService>();
-        services.AddScoped<CreateMedicalCaseService>();
+        services.AddScoped<RegisterPatientHandler>();
+        services.AddScoped<GetPatientQueryHandler>();
+        services.AddScoped<CreateCaseHandler>();
 
         return services;
     }

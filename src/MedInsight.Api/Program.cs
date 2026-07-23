@@ -1,7 +1,9 @@
 using System.Text.Json.Serialization;
+using MedInsight.Api.Middleware;
 using MedInsight.Application;
 using MedInsight.Infrastructure;
 using MedInsight.Infrastructure.Persistence;
+using MedInsight.TimelineService;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -11,6 +13,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddTimelineService();
+
+builder.Services.AddExceptionHandler<DomainExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -37,6 +43,8 @@ builder.Services.AddHealthChecks()
         tags: ["ready"]);
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
 {
