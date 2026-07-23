@@ -6,7 +6,7 @@
 
 ```
 USERS
-- id PK, full_name, email, status
+- id PK, full_name, email, status, role, password_hash (bkz. adr-016-mvp-authentication.md)
 
 PATIENTS
 - id PK, user_id FK, date_of_birth

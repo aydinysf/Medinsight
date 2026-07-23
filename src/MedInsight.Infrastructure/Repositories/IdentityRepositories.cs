@@ -12,6 +12,9 @@ public sealed class UserRepository(MedInsightDbContext db) : IUserRepository
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 
+    public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
+        db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email.Trim().ToLower(), cancellationToken);
+
     public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default) =>
         db.Users.AsNoTracking().AnyAsync(u => u.Email == email.Trim().ToLower(), cancellationToken);
 }

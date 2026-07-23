@@ -17,6 +17,13 @@
   - Not: Case tek aggregate root (ADR-001), 7 durumlu state machine (Draft→...→Closed, Reopen→FollowUp); her geçiş CaseStatusChanged üretir. Domain event zarfı + outbox (jsonb) + OutboxProcessor (at-least-once, idempotent handler). Timeline pasif abone (ADR-006). Identity: users/patients/doctors/caregivers + case_members. Tablolar snake_case (EFCore.NamingConventions). Kavram bazlı Domain klasörleri. API /api/v1 önekine geçti; DomainException→409. Migration reset: InitialSchema. 18 domain testi geçti; uçtan uca smoke test (hasta→vaka→outbox→timeline) doğrulandı.
   - Teknik not: Domain event'lerde ctor + [JsonConstructor] yerine required init property kullanıldı — nullable CaseId zarfı ctor parametresine bağlanamıyordu (STJ "must bind" hatası)
 
+- [Test] Application handler testleri eklendi (in-memory fake repolar)
+  - Dosya: tests/MedInsight.Application.Tests/**
+
+- [Feature] WP2: JWT kimlik doğrulama + iki katmanlı yetkilendirme (ADR-016)
+  - Dosya: docs/adr/adr-016-mvp-authentication.md, docs/domain/erd-identity-case.md (users: +role, +password_hash), src/MedInsight.Domain/Identity/User.cs, src/MedInsight.Application/{Abstractions/Auth,Auth,Common,Cases,Patients}/**, src/MedInsight.Infrastructure/Auth/**, src/MedInsight.Api/{Auth,Controllers,Middleware}/**, Migrations/AddAuthFieldsToUsers
+  - Not: POST /api/v1/auth/login → JWT (userId+role claim); rol katmanı [Authorize(Roles)], kaynak katmanı handler'larda ICurrentUser ile (vaka üyeliği/sahiplik). PasswordHasher = ASP.NET Identity PBKDF2. ForbiddenAccessException→403. Canlı test: 401 (tokensiz/yanlış parola), 403 (başka profil/vaka/başkası adına), 200 (sahibi). 37 birim testi geçti. Jwt:Key dev değeri appsettings'te — üretimde secrets manager (docs/architecture/security-architecture.md)
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

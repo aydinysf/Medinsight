@@ -19,6 +19,7 @@ public sealed class CaseRepository(MedInsightDbContext db) : ICaseRepository
 
     public async Task<IReadOnlyList<Case>> GetByPatientIdAsync(Guid patientId, CancellationToken cancellationToken = default) =>
         await db.Cases.AsNoTracking()
+            .Include(c => c.Members)
             .Where(c => c.PatientId == patientId)
             .OrderByDescending(c => c.CreatedAtUtc)
             .ToListAsync(cancellationToken);

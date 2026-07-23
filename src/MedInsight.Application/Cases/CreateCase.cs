@@ -1,6 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using MedInsight.Application.Abstractions.Auth;
 using MedInsight.Application.Abstractions.Repositories;
+using MedInsight.Application.Common;
 using MedInsight.Domain.Cases;
+using MedInsight.Domain.Identity;
 
 namespace MedInsight.Application.Cases;
 
@@ -34,7 +37,7 @@ public static class CaseMappings
             medicalCase.CreatedAtUtc);
 }
 
-public sealed class CreateCaseHandler(IPatientRepository patients, ICaseRepository cases)
+public sealed class CreateCaseHandler(IPatientRepository patients, ICaseRepository cases, ICurrentUser currentUser)
 {
     /// <summary>Hasta bulunamazsa null döner (API 404'e eşler).</summary>
     public async Task<CaseDto?> HandleAsync(CreateCase command, CancellationToken cancellationToken = default)
@@ -43,6 +46,12 @@ public sealed class CreateCaseHandler(IPatientRepository patients, ICaseReposito
         if (patient is null)
         {
             return null;
+        }
+
+        // Kaynak bazlı yetki: Patient yalnızca kendi adına vaka açabilir; Admin serbest (ADR-016).
+        if (currentUser.Role != UserRole.Admin && patient.UserId != currentUser.UserId)
+        {
+            throw new ForbiddenAccessException("Yalnızca kendi adınıza vaka oluşturabilirsiniz.");
         }
 
         var medicalCase = Case.Create(

@@ -1,4 +1,5 @@
 using MedInsight.Application.Cases;
+using MedInsight.Application.Common;
 using MedInsight.Application.Tests.Fakes;
 using MedInsight.Domain.Cases;
 using MedInsight.Domain.Identity;
@@ -9,12 +10,13 @@ public class CreateCaseHandlerTests
 {
     private readonly InMemoryPatientRepository _patients = new();
     private readonly InMemoryCaseRepository _cases = new();
+    private readonly FakeCurrentUser _currentUser = new();
 
-    private CreateCaseHandler Handler => new(_patients, _cases);
+    private CreateCaseHandler Handler => new(_patients, _cases, _currentUser);
 
-    private Patient SeedPatient()
+    private Patient SeedPatientAsCurrentUser()
     {
-        var patient = Patient.Create(Guid.NewGuid());
+        var patient = Patient.Create(_currentUser.UserId);
         _patients.Add(patient);
         return patient;
     }
@@ -22,7 +24,7 @@ public class CreateCaseHandlerTests
     [Fact]
     public async Task Vaka_Draft_durumunda_olusur_ve_kaydedilir()
     {
-        var patient = SeedPatient();
+        var patient = SeedPatientAsCurrentUser();
 
         var dto = await Handler.HandleAsync(new CreateCase(patient.Id, "Baş ağrısı takibi", "MR takip", BodySystem.Neuro));
 
@@ -37,7 +39,7 @@ public class CreateCaseHandlerTests
     [Fact]
     public async Task Hastanin_kullanicisi_vakaya_Manage_uyesi_olur()
     {
-        var patient = SeedPatient();
+        var patient = SeedPatientAsCurrentUser();
 
         await Handler.HandleAsync(new CreateCase(patient.Id, "Vaka", null, null));
 
@@ -59,9 +61,32 @@ public class CreateCaseHandlerTests
     }
 
     [Fact]
+    public async Task Baska_hastanin_adina_vaka_acilamaz_403()
+    {
+        var otherPatient = Patient.Create(Guid.NewGuid());
+        _patients.Add(otherPatient);
+
+        await Assert.ThrowsAsync<ForbiddenAccessException>(() =>
+            Handler.HandleAsync(new CreateCase(otherPatient.Id, "Vaka", null, null)));
+        Assert.Empty(_cases.Cases);
+    }
+
+    [Fact]
+    public async Task Admin_baska_hasta_adina_vaka_acabilir()
+    {
+        var otherPatient = Patient.Create(Guid.NewGuid());
+        _patients.Add(otherPatient);
+        _currentUser.Role = UserRole.Admin;
+
+        var dto = await Handler.HandleAsync(new CreateCase(otherPatient.Id, "Vaka", null, null));
+
+        Assert.NotNull(dto);
+    }
+
+    [Fact]
     public async Task BodySystem_verilmezse_Unknown_atanir()
     {
-        var patient = SeedPatient();
+        var patient = SeedPatientAsCurrentUser();
 
         var dto = await Handler.HandleAsync(new CreateCase(patient.Id, "Vaka", null, null));
 

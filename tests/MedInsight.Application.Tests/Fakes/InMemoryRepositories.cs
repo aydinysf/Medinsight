@@ -13,6 +13,9 @@ public sealed class InMemoryUserRepository : IUserRepository
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(Users.FirstOrDefault(u => u.Id == id));
 
+    public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Users.FirstOrDefault(u => u.Email == email.Trim().ToLowerInvariant()));
+
     public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default) =>
         Task.FromResult(Users.Any(u => u.Email == email.Trim().ToLowerInvariant()));
 }

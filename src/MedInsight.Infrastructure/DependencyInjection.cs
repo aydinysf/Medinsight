@@ -1,4 +1,6 @@
+using MedInsight.Application.Abstractions.Auth;
 using MedInsight.Application.Abstractions.Repositories;
+using MedInsight.Infrastructure.Auth;
 using MedInsight.Infrastructure.Persistence;
 using MedInsight.Infrastructure.Persistence.Outbox;
 using MedInsight.Infrastructure.Repositories;
@@ -25,6 +27,9 @@ public static class DependencyInjection
                     npgsql.MigrationsAssembly(typeof(MedInsightDbContext).Assembly.FullName))
                 .UseSnakeCaseNamingConvention()
                 .AddInterceptors(provider.GetRequiredService<DomainEventsToOutboxInterceptor>()));
+
+        services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
+        services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPatientRepository, PatientRepository>();

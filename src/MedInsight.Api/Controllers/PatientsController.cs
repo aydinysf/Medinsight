@@ -1,19 +1,20 @@
-using MedInsight.Application.Abstractions.Repositories;
 using MedInsight.Application.Cases;
 using MedInsight.Application.Patients;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedInsight.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/patients")]
+[Authorize]
 public sealed class PatientsController(
     RegisterPatientHandler registerPatient,
     GetPatientQueryHandler getPatient,
-    IPatientRepository patients,
-    ICaseRepository cases) : ControllerBase
+    GetPatientCasesQueryHandler getPatientCases) : ControllerBase
 {
     [HttpPost]
+    [AllowAnonymous]
     [ProducesResponseType<PatientDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -25,6 +26,7 @@ public sealed class PatientsController(
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType<PatientDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PatientDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
@@ -37,12 +39,7 @@ public sealed class PatientsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<CaseDto>>> GetCases(Guid id, CancellationToken cancellationToken)
     {
-        if (!await patients.ExistsAsync(id, cancellationToken))
-        {
-            return NotFound();
-        }
-
-        var result = await cases.GetByPatientIdAsync(id, cancellationToken);
-        return Ok(result.Select(c => c.ToDto()).ToList());
+        var result = await getPatientCases.HandleAsync(id, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
     }
 }

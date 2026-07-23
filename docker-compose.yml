@@ -10,6 +10,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__MedInsightDb: Host=postgres;Port=5432;Database=medinsight;Username=medinsight;Password=medinsight
       Database__ApplyMigrationsOnStartup: "true"
+      Jwt__Key: dev-only-medinsight-signing-key-change-in-production-0000
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MedInsight.Application.Abstractions.Auth;
 using MedInsight.Application.Abstractions.Repositories;
 using MedInsight.Domain.Common;
 using MedInsight.Domain.Identity;
@@ -8,12 +9,13 @@ namespace MedInsight.Application.Patients;
 public sealed record RegisterPatient(
     [Required] [StringLength(200, MinimumLength = 2)] string FullName,
     [Required] [EmailAddress] [StringLength(320)] string Email,
+    [Required] [StringLength(128, MinimumLength = 8)] string Password,
     DateOnly? DateOfBirth,
     Sex? Sex);
 
 public sealed record PatientDto(Guid Id, Guid UserId, string FullName, string Email, DateOnly? DateOfBirth, Sex Sex, DateTime CreatedAtUtc);
 
-public sealed class RegisterPatientHandler(IUserRepository users, IPatientRepository patients)
+public sealed class RegisterPatientHandler(IUserRepository users, IPatientRepository patients, IPasswordHasher passwordHasher)
 {
     public async Task<PatientDto> HandleAsync(RegisterPatient command, CancellationToken cancellationToken = default)
     {
@@ -22,7 +24,7 @@ public sealed class RegisterPatientHandler(IUserRepository users, IPatientReposi
             throw new DomainException("Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var.");
         }
 
-        var user = User.Create(command.FullName, command.Email);
+        var user = User.Create(command.FullName, command.Email, UserRole.Patient, passwordHasher.Hash(command.Password));
         var patient = Patient.Create(user.Id, command.DateOfBirth, command.Sex ?? Sex.Unknown);
 
         users.Add(user);
