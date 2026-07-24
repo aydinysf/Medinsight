@@ -21,6 +21,12 @@ public static class DependencyInjection
         services.AddScoped<IDomainEventHandler<AIAnalysisCompleted>, OnAIAnalysisCompleted>();
         services.AddScoped<IDomainEventHandler<DoctorReviewPriorityRaised>, OnDoctorReviewPriorityRaised>();
         services.AddScoped<IDomainEventHandler<HealthRouteSnapshotCreated>, OnHealthRouteSnapshotCreated>();
+        services.AddScoped<IDomainEventHandler<ConsultationStarted>, OnConsultationStarted>();
+        services.AddScoped<IDomainEventHandler<ConsultationCompleted>, OnConsultationCompleted>();
+        services.AddScoped<IDomainEventHandler<AIAnalysisReviewed>, OnAIAnalysisReviewed>();
+        services.AddScoped<IDomainEventHandler<TreatmentPlanCreated>, OnTreatmentPlanCreated>();
+        services.AddScoped<IDomainEventHandler<ClinicalNoteAdded>, OnClinicalNoteAdded>();
+        services.AddScoped<IDomainEventHandler<EscalationSuggested>, OnEscalationSuggested>();
 
         return services;
     }

@@ -11,5 +11,7 @@ public interface ICaseRepository
 
     Task<IReadOnlyList<Case>> GetByPatientIdAsync(Guid patientId, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<ConsultationMessage>> GetConsultationMessagesAsync(Guid consultationId, CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

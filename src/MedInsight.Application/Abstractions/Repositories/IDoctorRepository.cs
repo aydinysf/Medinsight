@@ -20,5 +20,8 @@ public interface IDoctorRepository
 
     Task<IReadOnlyDictionary<Guid, ReviewerProfile>> GetReviewerProfilesAsync(IReadOnlyCollection<Guid> doctorIds, CancellationToken cancellationToken = default);
 
+    /// <summary>Güncelleme amaçlı izlenen (tracked) profil.</summary>
+    Task<ReviewerProfile?> GetReviewerProfileForUpdateAsync(Guid doctorId, CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -2,6 +2,7 @@ using MedInsight.Application.Admin;
 using MedInsight.Application.Analyses;
 using MedInsight.Application.Auth;
 using MedInsight.Application.Cases;
+using MedInsight.Application.Consultations;
 using MedInsight.Application.Doctors;
 using MedInsight.Application.Documents;
 using MedInsight.Application.HealthRoutes;
@@ -39,6 +40,16 @@ public static class DependencyInjection
         services.AddScoped<RejectVerificationHandler>();
         services.AddSingleton<DoctorMatchingEngine>();
         services.AddScoped<GetDoctorMatchesQueryHandler>();
+        services.AddScoped<DoctorActionContext>();
+        services.AddScoped<StartConsultationHandler>();
+        services.AddScoped<SendConsultationMessageHandler>();
+        services.AddScoped<GetConsultationMessagesQueryHandler>();
+        services.AddScoped<GetCaseConsultationsQueryHandler>();
+        services.AddScoped<AddClinicalNoteHandler>();
+        services.AddScoped<CompleteConsultationHandler>();
+        services.AddScoped<ReviewAiAnalysisHandler>();
+        services.AddScoped<CreateTreatmentPlanHandler>();
+        services.AddScoped<RequestEscalationHandler>();
 
         // Document Quality Engine — her kriter bağımsız plugin (document-quality-engine.md)
         services.AddSingleton<IQualityCriterion, DuplicatedFilesCriterion>();
@@ -59,6 +70,12 @@ public static class DependencyInjection
 
         // Identity & Verification abonesi (reviewer-profile.md)
         services.AddScoped<IDomainEventHandler<MedInsight.Domain.Identity.Events.DoctorVerified>, OnDoctorVerifiedCreateReviewerProfile>();
+
+        // Konsültasyon aboneleri: müsaitlik sayacı (ADR-009), ReviewerProfile, escalation (ADR-014)
+        services.AddScoped<IDomainEventHandler<ConsultationStarted>, OnConsultationStartedUpdateAvailability>();
+        services.AddScoped<IDomainEventHandler<ConsultationCompleted>, OnConsultationCompletedUpdateAvailability>();
+        services.AddScoped<IDomainEventHandler<AIAnalysisReviewed>, OnAIAnalysisReviewedUpdateReviewerProfile>();
+        services.AddScoped<IDomainEventHandler<AIAnalysisCompleted>, OnAIAnalysisCompletedEscalationCheck>();
 
         return services;
     }

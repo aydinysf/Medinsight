@@ -37,6 +37,9 @@ public sealed class DoctorRepository(MedInsightDbContext db) : IDoctorRepository
             .Where(p => doctorIds.Contains(p.DoctorId))
             .ToDictionaryAsync(p => p.DoctorId, cancellationToken);
 
+    public Task<ReviewerProfile?> GetReviewerProfileForUpdateAsync(Guid doctorId, CancellationToken cancellationToken = default) =>
+        db.ReviewerProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorId, cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         db.SaveChangesAsync(cancellationToken);
 }

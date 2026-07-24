@@ -1,3 +1,4 @@
+using MedInsight.Domain.Cases.Events;
 using MedInsight.Domain.Common;
 
 namespace MedInsight.Domain.Cases;
@@ -28,6 +29,14 @@ public sealed class AiAnalysis : Entity
 
     public string PatientMessage { get; private set; } = null!;
 
+    public Guid? ReviewedByDoctorId { get; private set; }
+
+    public AnalysisReviewDecision? ReviewDecision { get; private set; }
+
+    public string? CorrectionNotes { get; private set; }
+
+    public DateTime? ReviewedAtUtc { get; private set; }
+
     public IReadOnlyCollection<AiFinding> Findings => _findings.AsReadOnly();
 
     public IReadOnlyCollection<DifferentialDiagnosis> DifferentialDiagnoses => _differentialDiagnoses.AsReadOnly();
@@ -48,6 +57,24 @@ public sealed class AiAnalysis : Entity
             Summary = summary,
             PatientMessage = patientMessage,
         };
+    }
+
+    internal void RecordReview(Guid doctorId, AnalysisReviewDecision decision, string? correctionNotes)
+    {
+        if (ReviewDecision is not null)
+        {
+            throw new DomainException("Bu analiz zaten incelenmiş.");
+        }
+
+        if (decision == AnalysisReviewDecision.Corrected && string.IsNullOrWhiteSpace(correctionNotes))
+        {
+            throw new DomainException("Düzeltme kararı, düzeltme notu olmadan kaydedilemez (Learning Loop girdisi).");
+        }
+
+        ReviewedByDoctorId = doctorId;
+        ReviewDecision = decision;
+        CorrectionNotes = correctionNotes;
+        ReviewedAtUtc = DateTime.UtcNow;
     }
 
     internal AiFinding AddFinding(string description, AiFindingSource source, Guid? sourceDocumentId, string? disclaimer)

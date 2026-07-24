@@ -1,5 +1,6 @@
 using MedInsight.Application.Analyses;
 using MedInsight.Application.Cases;
+using MedInsight.Application.Consultations;
 using MedInsight.Application.HealthRoutes;
 using MedInsight.Application.Matching;
 using MedInsight.TimelineService;
@@ -18,6 +19,8 @@ public sealed class CasesController(
     GetHealthRouteQueryHandler getHealthRoute,
     GetHealthRouteSnapshotsQueryHandler getHealthRouteSnapshots,
     GetDoctorMatchesQueryHandler getDoctorMatches,
+    ReviewAiAnalysisHandler reviewAnalysis,
+    RequestEscalationHandler requestEscalation,
     ITimelineStore timeline) : ControllerBase
 {
     [HttpPost]
@@ -89,6 +92,29 @@ public sealed class CasesController(
     {
         var result = await getDoctorMatches.HandleAsync(id, specialty, cancellationToken);
         return result is null ? NotFound() : Ok(result);
+    }
+
+    /// <summary>Doktorun AI analiz incelemesi — ReviewerProfile ve Learning Loop girdisi.</summary>
+    [HttpPost("{id:guid}/analyses/{analysisId:guid}/review")]
+    [Authorize(Roles = "Doctor")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult> ReviewAnalysis(Guid id, Guid analysisId, ReviewAnalysis command, CancellationToken cancellationToken)
+    {
+        var result = await reviewAnalysis.HandleAsync(id, analysisId, command, cancellationToken);
+        return result is null ? NotFound() : Ok();
+    }
+
+    /// <summary>ADR-014: manuel "ikinci görüş" talebi — MVP'de öncelik + not, vendor çağrısı yok.</summary>
+    [HttpPost("{id:guid}/escalation-request")]
+    [Authorize(Roles = "Doctor")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult> RequestEscalation(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await requestEscalation.HandleAsync(id, cancellationToken);
+        return result is null ? NotFound() : Accepted();
     }
 
     [HttpGet("{id:guid}/timeline")]

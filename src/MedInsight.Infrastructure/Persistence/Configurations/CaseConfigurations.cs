@@ -24,6 +24,8 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
         builder.HasMany(c => c.AiAnalyses).WithOne().HasForeignKey(a => a.CaseId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(c => c.HealthRouteSnapshots).WithOne().HasForeignKey(s => s.CaseId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(c => c.HealthRoute).WithOne().HasForeignKey<HealthRoute>(r => r.CaseId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(c => c.Consultations).WithOne().HasForeignKey(x => x.CaseId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(c => c.Treatments).WithOne().HasForeignKey(t => t.CaseId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -68,6 +70,51 @@ public sealed class DicomSeriesConfiguration : IEntityTypeConfiguration<DicomSer
         builder.Property(s => s.SeriesInstanceUid).HasMaxLength(128);
         builder.Property(s => s.Description).HasMaxLength(1000);
         builder.HasIndex(s => s.StudyId);
+    }
+}
+
+public sealed class ConsultationConfiguration : IEntityTypeConfiguration<Consultation>
+{
+    public void Configure(EntityTypeBuilder<Consultation> builder)
+    {
+        builder.HasKey(c => c.Id);
+        builder.HasIndex(c => new { c.CaseId, c.Status });
+        builder.HasIndex(c => c.DoctorId);
+
+        builder.HasMany(c => c.Messages).WithOne().HasForeignKey(m => m.ConsultationId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(c => c.ClinicalNotes).WithOne().HasForeignKey(n => n.ConsultationId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public sealed class ConsultationMessageConfiguration : IEntityTypeConfiguration<ConsultationMessage>
+{
+    public void Configure(EntityTypeBuilder<ConsultationMessage> builder)
+    {
+        builder.HasKey(m => m.Id);
+        // TODO(security): at-rest column-level şifreleme (security-architecture.md) — MVP teknik borcu.
+        builder.Property(m => m.Content).HasMaxLength(4000).IsRequired();
+        builder.HasIndex(m => new { m.ConsultationId, m.CreatedAtUtc });
+    }
+}
+
+public sealed class ClinicalNoteConfiguration : IEntityTypeConfiguration<ClinicalNote>
+{
+    public void Configure(EntityTypeBuilder<ClinicalNote> builder)
+    {
+        builder.HasKey(n => n.Id);
+        builder.Property(n => n.Content).HasMaxLength(8000).IsRequired();
+        builder.HasIndex(n => n.ConsultationId);
+    }
+}
+
+public sealed class TreatmentConfiguration : IEntityTypeConfiguration<Treatment>
+{
+    public void Configure(EntityTypeBuilder<Treatment> builder)
+    {
+        builder.HasKey(t => t.Id);
+        builder.Property(t => t.Description).HasMaxLength(8000).IsRequired();
+        builder.Property(t => t.FollowUpDate).HasColumnType("date");
+        builder.HasIndex(t => t.CaseId);
     }
 }
 

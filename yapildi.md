@@ -56,6 +56,11 @@
   - Not: Doktor Pending kayıt → belge+QR yükleme (QR parse admin'e ÖNERİ, otomatik onay yok) → admin approve/reject (approve'da Idempotency-Key ZORUNLU, 400 dönüyor). DoctorVerified event'i ReviewerProfile'ı otomatik açıyor. Müsaitlik: EffectiveStatus = ManualOverride ?? ComputedStatus; Computed asla Away üretmez; süresi dolan override yok sayılır. Matching: 5 faktör (Specialty=5, Location=3 nötr-MVP, Availability=3, Experience=1, ResponseSpeed=1 — Matching:Weights config), max 5 öneri, Away hariç, Busy "yoğun" etiketiyle seçilebilir, ScoreBreakdown açıklanabilir. Admin seed: config'ten (dev: admin@medinsight.local). 109 birim testi + canlı E2E (7 senaryo)
   - Dilim B (sırada): Consultation + SignalR mesajlaşma + tedavi planı (zorunlu snapshot) + AIAnalysisReviewed + escalation (ADR-014)
 
+- [Feature] WP5 dilim B (WP5 kapandı): Consultation + SignalR + tedavi planı + AIAnalysisReviewed + escalation
+  - Dosya: src/MedInsight.Domain/Cases/{Consultation,Case,AiAnalysis}.cs + Events/ConsultationEvents.cs, src/MedInsight.Application/Consultations/**, src/MedInsight.Api/{Hubs/ConsultationHub.cs,Controllers/ConsultationsController.cs}, Migrations/AddConsultationAndTreatment
+  - Not: Konsültasyon: hasta (Manage) doğrulanmış doktoru davet eder → doktor Contribute üyesi, ActiveCaseCount event'le artar/azalır (ADR-009 bağlantısı). Mesaj event'i içerik TAŞIMAZ (gizlilik); canlı akış SignalR /hubs/consultations (JWT query token), REST geçmiş/fallback. Tedavi planı: invariant 2 — zorunlu Doctor snapshot'ı + DoctorReview→Treatment→(kontrol tarihi varsa) FollowUp. AIAnalysisReviewed → ReviewerProfile.RecordReview (Corrected için not zorunlu — Learning Loop). Escalation (ADR-014): otomatik koşul (High/Critical tanı + OpenSource bulgu) + manuel doktor talebi; MVP'de öncelik High + timeline notu, vendor çağrısı yok. 122 birim testi + canlı E2E (9 adım: konsültasyon→mesajlaşma→Corrected inceleme→ReviewerProfile 1/1.0→escalation 202→plan→rota v3 Doctor→FollowUp→sayaç 0)
+  - Teknik borç: mesaj/not/plan içeriği için at-rest column-level şifreleme (security-architecture.md) — TODO(security) işaretli
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

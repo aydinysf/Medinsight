@@ -27,6 +27,8 @@ public sealed class Case : AggregateRoot
     private readonly List<Measurement> _measurements = [];
     private readonly List<AiAnalysis> _aiAnalyses = [];
     private readonly List<HealthRouteSnapshot> _healthRouteSnapshots = [];
+    private readonly List<Consultation> _consultations = [];
+    private readonly List<Treatment> _treatments = [];
 
     private Case()
     {
@@ -51,6 +53,10 @@ public sealed class Case : AggregateRoot
     public IReadOnlyCollection<AiAnalysis> AiAnalyses => _aiAnalyses.AsReadOnly();
 
     public IReadOnlyCollection<HealthRouteSnapshot> HealthRouteSnapshots => _healthRouteSnapshots.AsReadOnly();
+
+    public IReadOnlyCollection<Consultation> Consultations => _consultations.AsReadOnly();
+
+    public IReadOnlyCollection<Treatment> Treatments => _treatments.AsReadOnly();
 
     public IReadOnlyCollection<CaseMember> Members => _members.AsReadOnly();
 
@@ -383,6 +389,119 @@ public sealed class Case : AggregateRoot
 
         return snapshot;
     }
+
+    // --- Konsültasyon (consultation-model.md) ---
+
+    /// <summary>Doktor vakaya dahil olur; Contribute yetkili üye yapılır. Kapalı vakada konsültasyon açılamaz.</summary>
+    public Consultation StartConsultation(Guid doctorId, Guid doctorUserId)
+    {
+        if (Status is CaseStatus.Draft or CaseStatus.Closed)
+        {
+            throw new DomainException("Bu durumda konsültasyon başlatılamaz.");
+        }
+
+        if (_consultations.Any(c => c.DoctorId == doctorId && c.Status == ConsultationStatus.Active))
+        {
+            throw new DomainException("Bu doktorla zaten aktif bir konsültasyon var.");
+        }
+
+        var consultation = Consultation.Start(Id, doctorId);
+        _consultations.Add(consultation);
+
+        if (_members.All(m => m.UserId != doctorUserId))
+        {
+            _members.Add(CaseMember.Create(Id, doctorUserId, CaseRole.Doctor, PermissionLevel.Contribute));
+        }
+
+        Raise(new ConsultationStarted { CaseId = Id, ConsultationId = consultation.Id, DoctorId = doctorId });
+        return consultation;
+    }
+
+    public ConsultationMessage AddConsultationMessage(Guid consultationId, Guid senderUserId, string content)
+    {
+        var consultation = GetConsultation(consultationId);
+        var message = consultation.AddMessage(senderUserId, content);
+
+        // İçerik event'e KONMAZ — gizlilik (domain-events-catalog.md).
+        Raise(new ConsultationMessageSent { CaseId = Id, MessageId = message.Id, ConsultationId = consultationId, SenderUserId = senderUserId });
+        return message;
+    }
+
+    public ClinicalNote AddClinicalNote(Guid consultationId, Guid doctorId, string content)
+    {
+        var consultation = GetConsultation(consultationId);
+        var note = consultation.AddClinicalNote(doctorId, content);
+        Raise(new ClinicalNoteAdded { CaseId = Id, NoteId = note.Id, ConsultationId = consultationId, DoctorId = doctorId });
+        return note;
+    }
+
+    public void CompleteConsultation(Guid consultationId)
+    {
+        var consultation = GetConsultation(consultationId);
+        consultation.Complete();
+        Raise(new ConsultationCompleted { CaseId = Id, ConsultationId = consultationId, DoctorId = consultation.DoctorId });
+    }
+
+    /// <summary>Doktorun AI analizini incelemesi — Learning Loop ve ReviewerProfile girdisi.</summary>
+    public void ReviewAiAnalysis(Guid analysisId, Guid doctorId, AnalysisReviewDecision decision, string? correctionNotes)
+    {
+        var analysis = _aiAnalyses.FirstOrDefault(a => a.Id == analysisId)
+            ?? throw new DomainException("Analiz bu vakada bulunamadı.");
+
+        analysis.RecordReview(doctorId, decision, correctionNotes);
+        Raise(new AIAnalysisReviewed { CaseId = Id, AnalysisId = analysisId, DoctorId = doctorId, Decision = decision, CorrectionNotes = correctionNotes });
+    }
+
+    /// <summary>
+    /// Tedavi planı — Invariant 2: zorunlu HealthRoute snapshot'ı üretir; ayrıca
+    /// DoctorReview → Treatment geçişini, kontrol tarihi verildiyse FollowUp'ı tetikler.
+    /// </summary>
+    public Treatment CreateTreatmentPlan(Guid consultationId, Guid doctorId, string description, DateOnly? followUpDate = null)
+    {
+        var consultation = GetConsultation(consultationId);
+        consultation.EnsureActive();
+        if (consultation.DoctorId != doctorId)
+        {
+            throw new DomainException("Tedavi planını yalnızca konsültasyonun doktoru oluşturabilir.");
+        }
+
+        var treatment = Treatment.Create(Id, consultationId, doctorId, description, followUpDate);
+        _treatments.Add(treatment);
+
+        Raise(new TreatmentPlanCreated { CaseId = Id, TreatmentId = treatment.Id, ConsultationId = consultationId, CreatedByDoctorId = doctorId });
+
+        if (Status == CaseStatus.DoctorReview)
+        {
+            BeginTreatment();
+        }
+
+        // Invariant 2 (case-aggregate-root.md): tedavi planı olup rotası güncellenmeyen Case olamaz.
+        UpdateHealthRoute(
+            status: "Tedavi planı oluşturuldu",
+            nextStep: followUpDate is null ? "Tedavi sürecini takip edin" : $"Kontrol randevusu: {followUpDate:yyyy-MM-dd}",
+            riskLevel: RiskLevel,
+            triggeredBy: RouteTrigger.Doctor,
+            triggerSourceId: treatment.Id,
+            reason: "Doktor tedavi planı oluşturdu");
+
+        if (followUpDate is not null && Status == CaseStatus.Treatment)
+        {
+            ScheduleFollowUp();
+        }
+
+        return treatment;
+    }
+
+    /// <summary>ADR-014 MVP: vendor çağrısı yok — öncelik en üste çıkar, timeline'a not düşer.</summary>
+    public void SuggestEscalation(EscalationReason reason)
+    {
+        ReviewPriority = ReviewPriority.High;
+        Raise(new EscalationSuggested { CaseId = Id, Reason = reason });
+    }
+
+    private Consultation GetConsultation(Guid consultationId) =>
+        _consultations.FirstOrDefault(c => c.Id == consultationId)
+            ?? throw new DomainException("Konsültasyon bu vakada bulunamadı.");
 
     private MedicalDocument GetDocument(Guid documentId) =>
         _documents.FirstOrDefault(d => d.Id == documentId)

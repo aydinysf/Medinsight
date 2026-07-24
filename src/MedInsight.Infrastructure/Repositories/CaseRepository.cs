@@ -19,8 +19,16 @@ public sealed class CaseRepository(MedInsightDbContext db) : ICaseRepository
             .Include(c => c.AiAnalyses).ThenInclude(a => a.DifferentialDiagnoses)
             .Include(c => c.HealthRoute)
             .Include(c => c.HealthRouteSnapshots)
+            .Include(c => c.Consultations)
+            .Include(c => c.Treatments)
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+    public async Task<IReadOnlyList<ConsultationMessage>> GetConsultationMessagesAsync(Guid consultationId, CancellationToken cancellationToken = default) =>
+        await db.Set<ConsultationMessage>().AsNoTracking()
+            .Where(m => m.ConsultationId == consultationId)
+            .OrderBy(m => m.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<Case>> GetByPatientIdAsync(Guid patientId, CancellationToken cancellationToken = default) =>
         await db.Cases.AsNoTracking()

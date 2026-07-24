@@ -14,6 +14,7 @@ public sealed class AiAnalysisConfiguration : IEntityTypeConfiguration<AiAnalysi
         builder.Property(a => a.ConfidenceScore).HasColumnType("numeric(5,4)");
         builder.Property(a => a.Summary).HasMaxLength(8000).IsRequired();
         builder.Property(a => a.PatientMessage).HasMaxLength(4000).IsRequired();
+        builder.Property(a => a.CorrectionNotes).HasMaxLength(4000);
         builder.HasIndex(a => a.CaseId);
 
         builder.HasMany(a => a.Findings).WithOne().HasForeignKey(f => f.AnalysisId).OnDelete(DeleteBehavior.Cascade);
