@@ -4,6 +4,7 @@
     <ProjectReference Include="..\MedInsight.Application\MedInsight.Application.csproj" />
     <ProjectReference Include="..\MedInsight.Infrastructure\MedInsight.Infrastructure.csproj" />
     <ProjectReference Include="..\MedInsight.Dicom\MedInsight.Dicom.csproj" />
+    <ProjectReference Include="..\MedInsight.AIOrchestration\MedInsight.AIOrchestration.csproj" />
   </ItemGroup>
 
   <ItemGroup>

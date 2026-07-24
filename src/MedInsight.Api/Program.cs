@@ -1,5 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using MedInsight.AIOrchestration;
+using MedInsight.AIOrchestration.Pipeline;
 using MedInsight.Api.Auth;
 using MedInsight.Api.Middleware;
 using MedInsight.Application;
@@ -22,6 +24,8 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddTimelineService();
 builder.Services.AddDicomServices();
+builder.Services.AddAiOrchestration();
+builder.Services.Configure<AiOptions>(builder.Configuration.GetSection(AiOptions.SectionName));
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();

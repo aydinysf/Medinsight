@@ -28,6 +28,16 @@ public sealed class MedInsightDbContext(DbContextOptions<MedInsightDbContext> op
 
     public DbSet<Measurement> Measurements => Set<Measurement>();
 
+    public DbSet<AiAnalysis> AiAnalyses => Set<AiAnalysis>();
+
+    public DbSet<AiFinding> AiFindings => Set<AiFinding>();
+
+    public DbSet<DifferentialDiagnosis> DifferentialDiagnoses => Set<DifferentialDiagnosis>();
+
+    public DbSet<HealthRoute> HealthRoutes => Set<HealthRoute>();
+
+    public DbSet<HealthRouteSnapshot> HealthRouteSnapshots => Set<HealthRouteSnapshot>();
+
     public DbSet<TimelineEntry> TimelineEntries => Set<TimelineEntry>();
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();

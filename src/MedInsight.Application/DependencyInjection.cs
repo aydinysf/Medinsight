@@ -1,6 +1,8 @@
+using MedInsight.Application.Analyses;
 using MedInsight.Application.Auth;
 using MedInsight.Application.Cases;
 using MedInsight.Application.Documents;
+using MedInsight.Application.HealthRoutes;
 using MedInsight.Application.Ingestion;
 using MedInsight.Application.Patients;
 using MedInsight.Application.Quality;
@@ -23,6 +25,9 @@ public static class DependencyInjection
         services.AddScoped<GetPatientCasesQueryHandler>();
         services.AddScoped<UploadDocumentsHandler>();
         services.AddScoped<GetCaseDocumentsQueryHandler>();
+        services.AddScoped<GetHealthRouteQueryHandler>();
+        services.AddScoped<GetHealthRouteSnapshotsQueryHandler>();
+        services.AddScoped<GetCaseAnalysesQueryHandler>();
 
         // Document Quality Engine — her kriter bağımsız plugin (document-quality-engine.md)
         services.AddSingleton<IQualityCriterion, DuplicatedFilesCriterion>();
@@ -37,6 +42,9 @@ public static class DependencyInjection
         services.AddScoped<IDomainEventHandler<DocumentClassified>, OnDocumentClassifiedGroupDicom>();
         services.AddScoped<IDomainEventHandler<DocumentQualityScored>, OnDocumentQualityScoredRoute>();
         services.AddScoped<IDomainEventHandler<RoutingDecided>, OnRoutingDecidedExtractText>();
+
+        // Health Route Engine abonesi (ADR-002)
+        services.AddScoped<IDomainEventHandler<AIAnalysisCompleted>, OnAIAnalysisCompletedUpdateRoute>();
 
         return services;
     }

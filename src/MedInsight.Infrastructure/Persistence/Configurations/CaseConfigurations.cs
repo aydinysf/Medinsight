@@ -21,6 +21,9 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
         builder.HasMany(c => c.Documents).WithOne().HasForeignKey(d => d.CaseId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(c => c.DicomStudies).WithOne().HasForeignKey(s => s.CaseId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(c => c.Measurements).WithOne().HasForeignKey(m => m.CaseId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(c => c.AiAnalyses).WithOne().HasForeignKey(a => a.CaseId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(c => c.HealthRouteSnapshots).WithOne().HasForeignKey(s => s.CaseId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(c => c.HealthRoute).WithOne().HasForeignKey<HealthRoute>(r => r.CaseId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 

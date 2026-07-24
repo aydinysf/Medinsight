@@ -25,6 +25,8 @@ public sealed class Case : AggregateRoot
     private readonly List<MedicalDocument> _documents = [];
     private readonly List<DicomStudy> _dicomStudies = [];
     private readonly List<Measurement> _measurements = [];
+    private readonly List<AiAnalysis> _aiAnalyses = [];
+    private readonly List<HealthRouteSnapshot> _healthRouteSnapshots = [];
 
     private Case()
     {
@@ -41,6 +43,14 @@ public sealed class Case : AggregateRoot
     public CaseStatus Status { get; private set; }
 
     public RiskLevel RiskLevel { get; private set; }
+
+    public ReviewPriority ReviewPriority { get; private set; }
+
+    public HealthRoute? HealthRoute { get; private set; }
+
+    public IReadOnlyCollection<AiAnalysis> AiAnalyses => _aiAnalyses.AsReadOnly();
+
+    public IReadOnlyCollection<HealthRouteSnapshot> HealthRouteSnapshots => _healthRouteSnapshots.AsReadOnly();
 
     public IReadOnlyCollection<CaseMember> Members => _members.AsReadOnly();
 
@@ -66,6 +76,16 @@ public sealed class Case : AggregateRoot
 
         medicalCase._members.Add(CaseMember.Create(medicalCase.Id, patientUserId, CaseRole.Patient, PermissionLevel.Manage));
         medicalCase.Raise(new CaseCreated { CaseId = medicalCase.Id, PatientId = patientId, Title = medicalCase.Title });
+
+        // ADR-002: Version 1 — vaka açıldığında ilk rota snapshot'ı (invariant 1: her zaman tek current).
+        medicalCase.UpdateHealthRoute(
+            status: "Vaka oluşturuldu",
+            nextStep: "Tıbbi belgelerinizi yükleyin",
+            riskLevel: RiskLevel.Unknown,
+            triggeredBy: RouteTrigger.System,
+            triggerSourceId: null,
+            reason: "İlk rota");
+
         return medicalCase;
     }
 
@@ -159,6 +179,11 @@ public sealed class Case : AggregateRoot
         if (isSufficient && Status == CaseStatus.CollectingData)
         {
             TransitionTo(CaseStatus.AIAnalysis, "Belge kalite kontrolünden geçti");
+            Raise(new AIAnalysisRequested
+            {
+                CaseId = Id,
+                DocumentIds = _documents.Where(d => d.Status == DocumentStatus.QualityChecked).Select(d => d.Id).ToList(),
+            });
         }
     }
 
@@ -224,6 +249,125 @@ public sealed class Case : AggregateRoot
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         GetDocument(documentId).SetExtractedText(text, ocrConfidence);
+    }
+
+    /// <summary>
+    /// AI ön analizi kaydeder ve AIAnalysis → DoctorReview geçişini tetikler
+    /// (state machine: her zaman geçer, düşük confidence yalnız önceliği etkiler).
+    /// </summary>
+    public AiAnalysis AddAiAnalysis(
+        string modelVersion,
+        string promptVersion,
+        decimal confidenceScore,
+        string summary,
+        string patientMessage,
+        IReadOnlyList<AiFindingInput> findings,
+        IReadOnlyList<DifferentialDiagnosisInput> differentialDiagnoses)
+    {
+        if (Status != CaseStatus.AIAnalysis)
+        {
+            throw new DomainException("AI analizi yalnızca AIAnalysis durumundaki vakaya eklenebilir.");
+        }
+
+        var analysis = AiAnalysis.Create(Id, modelVersion, promptVersion, confidenceScore, summary, patientMessage);
+
+        var createdFindings = new List<AiFinding>();
+        foreach (var input in findings)
+        {
+            createdFindings.Add(analysis.AddFinding(input.Description, input.Source, input.SourceDocumentId, input.Disclaimer));
+        }
+
+        foreach (var input in differentialDiagnoses)
+        {
+            var sourceIds = input.SourceFindingIndexes.Select(i =>
+            {
+                if (i < 0 || i >= createdFindings.Count)
+                {
+                    throw new DomainException("DifferentialDiagnosis geçersiz bulgu indeksine referans veriyor.");
+                }
+
+                return createdFindings[i].Id;
+            }).ToList();
+
+            analysis.AddDifferentialDiagnosis(input.Name, input.ConfidenceScore, input.RiskLevel, sourceIds);
+        }
+
+        _aiAnalyses.Add(analysis);
+
+        Raise(new AIAnalysisCompleted
+        {
+            CaseId = Id,
+            AnalysisId = analysis.Id,
+            ModelVersion = modelVersion,
+            PromptVersion = promptVersion,
+            ConfidenceScore = confidenceScore,
+            FindingIds = createdFindings.Select(f => f.Id).ToList(),
+        });
+
+        CompleteAiAnalysis();
+        return analysis;
+    }
+
+    /// <summary>ADR-004: düşük confidence dalı — doktor inceleme önceliğini yükseltir.</summary>
+    public void EscalateReviewPriority(Guid analysisId, string reason)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        ReviewPriority = ReviewPriority.High;
+        Raise(new DoctorReviewPriorityRaised { CaseId = Id, AnalysisId = analysisId, Reason = reason });
+    }
+
+    /// <summary>
+    /// Yeni rota snapshot'ı (ADR-002): append-only zincir, doğrusal geçmiş,
+    /// current her zaman tek. Hiçbir snapshot güncellenmez/silinmez.
+    /// </summary>
+    public HealthRouteSnapshot UpdateHealthRoute(
+        string status,
+        string nextStep,
+        RiskLevel riskLevel,
+        RouteTrigger triggeredBy,
+        Guid? triggerSourceId,
+        string reason)
+    {
+        var previous = _healthRouteSnapshots.OrderByDescending(s => s.VersionNumber).FirstOrDefault();
+        var snapshot = HealthRouteSnapshot.Create(
+            Id,
+            previous?.Id,
+            (previous?.VersionNumber ?? 0) + 1,
+            status,
+            nextStep,
+            riskLevel,
+            triggeredBy,
+            triggerSourceId,
+            reason);
+
+        _healthRouteSnapshots.Add(snapshot);
+
+        if (HealthRoute is null)
+        {
+            HealthRoute = HealthRoute.Create(Id, snapshot);
+        }
+        else
+        {
+            HealthRoute.MoveTo(snapshot);
+        }
+
+        RiskLevel = riskLevel;
+
+        Raise(new HealthRouteSnapshotCreated
+        {
+            CaseId = Id,
+            SnapshotId = snapshot.Id,
+            PreviousVersionId = snapshot.PreviousVersionId,
+            VersionNumber = snapshot.VersionNumber,
+            Status = status,
+            NextStep = nextStep,
+            RiskLevel = riskLevel,
+            TriggeredBy = triggeredBy,
+            TriggerSourceId = triggerSourceId,
+            Reason = reason,
+        });
+
+        return snapshot;
     }
 
     private MedicalDocument GetDocument(Guid documentId) =>
@@ -309,3 +453,14 @@ public sealed class Case : AggregateRoot
         Raise(new CaseStatusChanged { CaseId = Id, FromStatus = fromStatus, ToStatus = toStatus, Reason = reason });
     }
 }
+
+public enum ReviewPriority
+{
+    Normal = 0,
+    High = 1,
+}
+
+/// <summary>AddAiAnalysis girdileri — bulgu Id'leri aggregate içinde üretildiği için indeksle referans verilir.</summary>
+public sealed record AiFindingInput(string Description, AiFindingSource Source, Guid? SourceDocumentId, string? Disclaimer = null);
+
+public sealed record DifferentialDiagnosisInput(string Name, decimal ConfidenceScore, RiskLevel RiskLevel, IReadOnlyList<int> SourceFindingIndexes);

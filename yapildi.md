@@ -40,6 +40,13 @@
   - Not: Resumable = SHA-256 içerik hash dedup — kesilen batch tekrarında aynı dosya yeniden işlenmez, alreadyExisted döner (canlı doğrulandı: 2. batch'te mükerrer yok). DicomIntegrity artık PatientID/StudyDate/Modality zorunlu tag'lerini fo-dicom ile kontrol ediyor. OcrScoreCriterion: OCR güven skoru kaliteye bağlandı (Stub sağlayıcıda uygulanmaz). Kriterler async + ağırlıklar config'ten (DicomIntegrity=3, OcrScore=2 — doküman önceliklerine göre). 73 birim testi
   - Post-MVP'ye kalan: chunk bazlı tekil büyük dosya (tus benzeri), Missing Pages/Resolution/Contrast görüntü kriterleri
 
+## 2026-07-25
+
+- [Feature] WP4: AI Orkestrasyon (Hızır) + Sağlık Rotası
+  - Dosya: src/MedInsight.AIOrchestration/** (7 katman: Intent/Planner/AgentSelector/ToolInvoker/MemoryContext/Reasoning/ResponseComposer + Guardrails + StubLlmClient + handler'lar), src/MedInsight.Domain/Cases/{HealthRoute,AiAnalysis,Case}.cs + Events/AiEvents.cs, src/MedInsight.Application/{HealthRoutes,Analyses}/**, Migrations/AddAiAnalysisAndHealthRoute
+  - Not: Case açılışında ilk rota snapshot'ı (ADR-002 Git modeli: append-only zincir, PreviousVersionId, tek current). AIAnalysisRequested kalite geçişinde otomatik. Guardrails 3 kapı: confidence eşiği (Ai:ConfidenceThreshold=0.6, ADR-004 → DoctorReviewPriorityRaised), kapsam kontrolü (tanı/doz regex → zorunlu yönlendirme metni), kaynak izlenebilirliği (belgeye dayanmayan bulgu + ona dayanan tanı adayı elenir). ADR-010 domain'de zorlanıyor: OpenSourceImageModel bulgusu DifferentialDiagnosis'u besleyemez + zorunlu disclaimer. PII: modele yalnız klinik veri; belge içeriği yalnızca context alanında (prompt-injection savunması yapısal). ILlmClient soyutlaması — MVP'de deterministik StubLlmClient (tanı adayı üretmez), gerçek sağlayıcı config ile bağlanacak. Yeni endpoint'ler: GET cases/{id}/analyses, /health-route, /health-route/snapshots. 89 birim testi
+  - Teknik not: StubLlmClient bölme hatası — Windows CRLF nedeniyle context section split başarısızdı, normalize edildi
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

@@ -18,6 +18,9 @@ public static class DependencyInjection
         services.AddScoped<IDomainEventHandler<DocumentQualityScored>, OnDocumentQualityScored>();
         services.AddScoped<IDomainEventHandler<DicomStudyGrouped>, OnDicomStudyGrouped>();
         services.AddScoped<IDomainEventHandler<RoutingDecided>, OnRoutingDecided>();
+        services.AddScoped<IDomainEventHandler<AIAnalysisCompleted>, OnAIAnalysisCompleted>();
+        services.AddScoped<IDomainEventHandler<DoctorReviewPriorityRaised>, OnDoctorReviewPriorityRaised>();
+        services.AddScoped<IDomainEventHandler<HealthRouteSnapshotCreated>, OnHealthRouteSnapshotCreated>();
 
         return services;
     }
