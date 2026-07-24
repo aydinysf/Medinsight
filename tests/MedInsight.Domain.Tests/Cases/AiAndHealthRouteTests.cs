@@ -48,12 +48,24 @@ public class AiAndHealthRouteTests
     }
 
     [Fact]
-    public void Kalite_gecisi_AIAnalysisRequested_uretir()
+    public void RequestAiAnalysis_yalnizca_AIAnalysis_durumunda_event_uretir()
     {
         var medicalCase = CaseInAiAnalysis(out var documentId);
 
+        medicalCase.RequestAiAnalysis();
+
         var requested = medicalCase.DomainEvents.OfType<AIAnalysisRequested>().Single();
         Assert.Contains(documentId, requested.DocumentIds);
+    }
+
+    [Fact]
+    public void RequestAiAnalysis_diger_durumlarda_sessizce_atlanir()
+    {
+        var medicalCase = NewCase();
+
+        medicalCase.RequestAiAnalysis();
+
+        Assert.DoesNotContain(medicalCase.DomainEvents, e => e is AIAnalysisRequested);
     }
 
     [Fact]

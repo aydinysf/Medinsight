@@ -179,12 +179,26 @@ public sealed class Case : AggregateRoot
         if (isSufficient && Status == CaseStatus.CollectingData)
         {
             TransitionTo(CaseStatus.AIAnalysis, "Belge kalite kontrolünden geçti");
-            Raise(new AIAnalysisRequested
-            {
-                CaseId = Id,
-                DocumentIds = _documents.Where(d => d.Status == DocumentStatus.QualityChecked).Select(d => d.Id).ToList(),
-            });
         }
+    }
+
+    /// <summary>
+    /// AI analiz talebi — routing/metin çıkarma tamamlandıktan sonra çağrılır
+    /// (pipeline sırası: quality → routing → extraction → AI). Idempotent:
+    /// yalnızca AIAnalysis durumunda event üretir.
+    /// </summary>
+    public void RequestAiAnalysis()
+    {
+        if (Status != CaseStatus.AIAnalysis)
+        {
+            return;
+        }
+
+        Raise(new AIAnalysisRequested
+        {
+            CaseId = Id,
+            DocumentIds = _documents.Where(d => d.Status == DocumentStatus.QualityChecked).Select(d => d.Id).ToList(),
+        });
     }
 
     /// <summary>Toplu yüklemedeki her DICOM dosyası: study/series bul-veya-oluştur (bkz. ingestion-pipeline.md).</summary>

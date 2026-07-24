@@ -70,39 +70,40 @@ public sealed class OnRoutingDecidedExtractText(
 {
     public async Task HandleAsync(RoutingDecided e, CancellationToken cancellationToken)
     {
-        if (e.Route != DocumentRoute.TextExtraction)
+        var medicalCase = await cases.GetByIdAsync(e.CaseId!.Value, cancellationToken);
+        var document = medicalCase?.Documents.FirstOrDefault(d => d.Id == e.DocumentId);
+        if (medicalCase is null || document is null)
         {
             return;
         }
 
-        var medicalCase = await cases.GetByIdAsync(e.CaseId!.Value, cancellationToken);
-        var document = medicalCase?.Documents.FirstOrDefault(d => d.Id == e.DocumentId);
-        if (medicalCase is null || document?.StorageKey is null || document.ExtractedText is not null)
+        if (e.Route == DocumentRoute.TextExtraction && document.StorageKey is not null && document.ExtractedText is null)
         {
-            return; // idempotency: metin zaten çıkarılmış
+            var content = await storage.DownloadAsync(document.StorageKey, cancellationToken);
+
+            string? text;
+            decimal? confidence = null;
+            if (document.Type == DocumentType.TextualReport)
+            {
+                text = pdfTextExtractor.ExtractText(content);
+            }
+            else
+            {
+                var ocr = await ocrProvider.ExtractTextAsync(content, cancellationToken);
+                text = ocr.Text;
+                confidence = ocr.ConfidenceScore;
+            }
+
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                medicalCase.StoreExtractedText(e.DocumentId, text, confidence);
+            }
         }
 
-        var content = await storage.DownloadAsync(document.StorageKey, cancellationToken);
-
-        string? text;
-        decimal? confidence = null;
-        if (document.Type == DocumentType.TextualReport)
-        {
-            text = pdfTextExtractor.ExtractText(content);
-        }
-        else
-        {
-            var ocr = await ocrProvider.ExtractTextAsync(content, cancellationToken);
-            text = ocr.Text;
-            confidence = ocr.ConfidenceScore;
-        }
-
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return; // çıkarılamadı — belge depoda durur, AI dilimi metinsizlerle ayrıca ilgilenecek
-        }
-
-        medicalCase.StoreExtractedText(e.DocumentId, text, confidence);
+        // Pipeline sırası: routing (ve varsa metin çıkarma) tamamlandı → AI analizi
+        // talep edilebilir. Outbox sıralı işlediği için aynı batch'teki diğer
+        // belgelerin RoutingDecided'ları bu talepten önce işlenir.
+        medicalCase.RequestAiAnalysis();
         await cases.SaveChangesAsync(cancellationToken);
     }
 }
