@@ -1,9 +1,12 @@
+using MedInsight.Application.Admin;
 using MedInsight.Application.Analyses;
 using MedInsight.Application.Auth;
 using MedInsight.Application.Cases;
+using MedInsight.Application.Doctors;
 using MedInsight.Application.Documents;
 using MedInsight.Application.HealthRoutes;
 using MedInsight.Application.Ingestion;
+using MedInsight.Application.Matching;
 using MedInsight.Application.Patients;
 using MedInsight.Application.Quality;
 using MedInsight.Application.Quality.Criteria;
@@ -28,6 +31,14 @@ public static class DependencyInjection
         services.AddScoped<GetHealthRouteQueryHandler>();
         services.AddScoped<GetHealthRouteSnapshotsQueryHandler>();
         services.AddScoped<GetCaseAnalysesQueryHandler>();
+        services.AddScoped<RegisterDoctorHandler>();
+        services.AddScoped<SubmitVerificationHandler>();
+        services.AddScoped<SetAvailabilityHandler>();
+        services.AddScoped<ListPendingVerificationsQueryHandler>();
+        services.AddScoped<ApproveVerificationHandler>();
+        services.AddScoped<RejectVerificationHandler>();
+        services.AddSingleton<DoctorMatchingEngine>();
+        services.AddScoped<GetDoctorMatchesQueryHandler>();
 
         // Document Quality Engine — her kriter bağımsız plugin (document-quality-engine.md)
         services.AddSingleton<IQualityCriterion, DuplicatedFilesCriterion>();
@@ -45,6 +56,9 @@ public static class DependencyInjection
 
         // Health Route Engine abonesi (ADR-002)
         services.AddScoped<IDomainEventHandler<AIAnalysisCompleted>, OnAIAnalysisCompletedUpdateRoute>();
+
+        // Identity & Verification abonesi (reviewer-profile.md)
+        services.AddScoped<IDomainEventHandler<MedInsight.Domain.Identity.Events.DoctorVerified>, OnDoctorVerifiedCreateReviewerProfile>();
 
         return services;
     }

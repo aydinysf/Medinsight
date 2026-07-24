@@ -6,8 +6,11 @@ using MedInsight.Api.Auth;
 using MedInsight.Api.Middleware;
 using MedInsight.Application;
 using MedInsight.Application.Abstractions.Auth;
+using MedInsight.Application.Abstractions.Repositories;
+using MedInsight.Application.Matching;
 using MedInsight.Application.Quality;
 using MedInsight.Dicom;
+using MedInsight.Domain.Identity;
 using MedInsight.Infrastructure;
 using MedInsight.Infrastructure.Persistence;
 using MedInsight.TimelineService;
@@ -30,6 +33,7 @@ builder.Services.Configure<AiOptions>(builder.Configuration.GetSection(AiOptions
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.Configure<QualityOptions>(builder.Configuration.GetSection(QualityOptions.SectionName));
+builder.Services.Configure<MatchingOptions>(builder.Configuration.GetSection(MatchingOptions.SectionName));
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("'Jwt:Key' yapılandırılmamış.");
@@ -103,6 +107,21 @@ if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
 {
     using var scope = app.Services.CreateScope();
     await scope.ServiceProvider.GetRequiredService<MedInsightDbContext>().Database.MigrateAsync();
+}
+
+// Geliştirme/pilot admin hesabı — yalnızca config'te tanımlıysa ve mevcut değilse oluşturulur.
+var adminEmail = app.Configuration["Admin:Email"];
+var adminPassword = app.Configuration["Admin:Password"];
+if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))
+{
+    using var scope = app.Services.CreateScope();
+    var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+    if (!await users.EmailExistsAsync(adminEmail))
+    {
+        var hasher = scope.ServiceProvider.GetRequiredService<MedInsight.Application.Abstractions.Auth.IPasswordHasher>();
+        users.Add(User.Create("Sistem Yöneticisi", adminEmail, UserRole.Admin, hasher.Hash(adminPassword)));
+        await scope.ServiceProvider.GetRequiredService<MedInsightDbContext>().SaveChangesAsync();
+    }
 }
 
 if (app.Environment.IsDevelopment())

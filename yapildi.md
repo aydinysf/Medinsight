@@ -51,6 +51,11 @@
   - Dosya: src/MedInsight.AIOrchestration/DependencyInjection.cs (TODO(llm-provider) — 3 adımlı talimat), docs/business/roadmap.md (WP-LLM paketi)
   - Not: ClaudeLlmClient : ILlmClient + Ai:Provider config anahtarı + secrets manager. WP8'den önce yapılacak.
 
+- [Feature] WP5 dilim A: Doktor doğrulama (ADR-007) + ReviewerProfile + müsaitlik (ADR-009) + Doctor Matching (ADR-003)
+  - Dosya: src/MedInsight.Domain/Identity/{Doctor,DoctorVerification,ReviewerProfile}.cs + Events/DoctorEvents.cs, src/MedInsight.Application/{Doctors,Admin,Matching}/**, src/MedInsight.Infrastructure/Repositories/DoctorRepository.cs, src/MedInsight.Api/Controllers/{DoctorsController,AdminController}.cs, Migrations/AddDoctorVerificationAndMatching
+  - Not: Doktor Pending kayıt → belge+QR yükleme (QR parse admin'e ÖNERİ, otomatik onay yok) → admin approve/reject (approve'da Idempotency-Key ZORUNLU, 400 dönüyor). DoctorVerified event'i ReviewerProfile'ı otomatik açıyor. Müsaitlik: EffectiveStatus = ManualOverride ?? ComputedStatus; Computed asla Away üretmez; süresi dolan override yok sayılır. Matching: 5 faktör (Specialty=5, Location=3 nötr-MVP, Availability=3, Experience=1, ResponseSpeed=1 — Matching:Weights config), max 5 öneri, Away hariç, Busy "yoğun" etiketiyle seçilebilir, ScoreBreakdown açıklanabilir. Admin seed: config'ten (dev: admin@medinsight.local). 109 birim testi + canlı E2E (7 senaryo)
+  - Dilim B (sırada): Consultation + SignalR mesajlaşma + tedavi planı (zorunlu snapshot) + AIAnalysisReviewed + escalation (ADR-014)
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

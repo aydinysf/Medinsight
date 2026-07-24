@@ -1,6 +1,7 @@
 using MedInsight.Application.Analyses;
 using MedInsight.Application.Cases;
 using MedInsight.Application.HealthRoutes;
+using MedInsight.Application.Matching;
 using MedInsight.TimelineService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,7 @@ public sealed class CasesController(
     GetCaseAnalysesQueryHandler getAnalyses,
     GetHealthRouteQueryHandler getHealthRoute,
     GetHealthRouteSnapshotsQueryHandler getHealthRouteSnapshots,
+    GetDoctorMatchesQueryHandler getDoctorMatches,
     ITimelineStore timeline) : ControllerBase
 {
     [HttpPost]
@@ -72,6 +74,20 @@ public sealed class CasesController(
     public async Task<ActionResult<IReadOnlyList<HealthRouteSnapshotDto>>> GetHealthRouteSnapshots(Guid id, CancellationToken cancellationToken)
     {
         var result = await getHealthRouteSnapshots.HandleAsync(id, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    /// <summary>Öneri listesi — atama değildir; nihai seçim hastanındır (ADR-003).</summary>
+    [HttpGet("{id:guid}/doctor-matches")]
+    [ProducesResponseType<IReadOnlyList<DoctorMatchResultDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<DoctorMatchResultDto>>> GetDoctorMatches(
+        Guid id,
+        [FromQuery] string? specialty,
+        CancellationToken cancellationToken)
+    {
+        var result = await getDoctorMatches.HandleAsync(id, specialty, cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 

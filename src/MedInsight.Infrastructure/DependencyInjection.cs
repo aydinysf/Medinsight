@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPatientRepository, PatientRepository>();
         services.AddScoped<ICaseRepository, CaseRepository>();
+        services.AddScoped<IDoctorRepository, DoctorRepository>();
         services.AddScoped<ITimelineStore, EfTimelineStore>();
 
         services.AddSingleton<IPdfTextExtractor, PdfPigTextExtractor>();

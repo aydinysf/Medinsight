@@ -16,6 +16,10 @@ public sealed class MedInsightDbContext(DbContextOptions<MedInsightDbContext> op
 
     public DbSet<Caregiver> Caregivers => Set<Caregiver>();
 
+    public DbSet<DoctorVerification> DoctorVerifications => Set<DoctorVerification>();
+
+    public DbSet<ReviewerProfile> ReviewerProfiles => Set<ReviewerProfile>();
+
     public DbSet<Case> Cases => Set<Case>();
 
     public DbSet<CaseMember> CaseMembers => Set<CaseMember>();
