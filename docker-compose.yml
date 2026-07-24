@@ -15,6 +15,7 @@ services:
       Storage__AccessKey: medinsight
       Storage__SecretKey: medinsight123
       Storage__UseSsl: "false"
+      Radiology__BaseUrl: http://radiology-inference:8000
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,6 +40,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - medinsight
+
+  radiology-inference:
+    build:
+      context: ./services/radiology-inference
+    container_name: medinsight-radiology
+    environment:
+      RADIOLOGY_BACKEND: stub
+    ports:
+      - "8100:8000"
     networks:
       - medinsight
 

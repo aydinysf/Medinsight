@@ -26,3 +26,11 @@ public sealed class OnRoutingDecided(ITimelineStore store) : IDomainEventHandler
             TimelineEntry.Create(e.CaseId!.Value, e.EventType, e.OccurredAt, $"Belge işleme yoluna yönlendirildi: {e.Route}", e.EventId),
             ct);
 }
+
+public sealed class OnImageFindingAdded(ITimelineStore store) : IDomainEventHandler<ImageFindingAdded>
+{
+    public Task HandleAsync(ImageFindingAdded e, CancellationToken ct) =>
+        store.AppendAsync(
+            TimelineEntry.Create(e.CaseId!.Value, e.EventType, e.OccurredAt, $"Deneysel görüntü bulgusu eklendi ({e.ModelName} — doğrulanmamış model, yalnız bilgilendirme)", e.EventId),
+            ct);
+}

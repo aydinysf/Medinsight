@@ -9,4 +9,7 @@ public interface IObjectStorage
     Task UploadAsync(string key, Stream content, string contentType, CancellationToken cancellationToken = default);
 
     Task<byte[]> DownloadAsync(string key, CancellationToken cancellationToken = default);
+
+    /// <summary>İç servislerin (örn. radyoloji) nesneyi doğrudan çekebilmesi için süreli okuma URL'si.</summary>
+    Task<string> GetPresignedReadUrlAsync(string key, TimeSpan validFor, CancellationToken cancellationToken = default);
 }

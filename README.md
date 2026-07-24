@@ -21,6 +21,10 @@ MedInsight.sln
     ├── MedInsight.TimelineService   # Passive event subscriber, append-only timeline (ADR-006). → Domain
     ├── MedInsight.Dicom             # DICOM parsing/grouping for ingestion. → Domain
     └── MedInsight.Api               # HTTP host, Swagger, health checks. → Application, Infrastructure
+services/
+    └── radiology-inference/         # Independent Python/FastAPI microservice (ADR-010).
+                                     # Informational-only open-source image model layer;
+                                     # mandatory disclaimer, never feeds diagnosis logic.
 ```
 
 Docs-first: code follows the documents in `docs/` — domain rule changes update the relevant `docs/domain/` file in the same PR, architectural decisions get an ADR first (see `docs/adr/`). The roadmap lives at `docs/business/roadmap.md`.

@@ -7,8 +7,10 @@ using MedInsight.Domain.Common;
 using MedInsight.Infrastructure.Audit;
 using MedInsight.Infrastructure.Auth;
 using MedInsight.Infrastructure.Ingestion;
+using MedInsight.Application.Abstractions.Radiology;
 using MedInsight.Infrastructure.Notifications;
 using MedInsight.Infrastructure.Persistence;
+using MedInsight.Infrastructure.Radiology;
 using MedInsight.Infrastructure.TextExtraction;
 using MedInsight.Infrastructure.Persistence.Outbox;
 using MedInsight.Infrastructure.Repositories;
@@ -63,6 +65,10 @@ public static class DependencyInjection
 
         // Notification Engine iletim katmanı (MVP: Simulated log kanalı)
         services.AddScoped<INotificationService, LogNotificationService>();
+
+        // Radiology Inference Service istemcisi (ADR-010) — Radiology:BaseUrl yoksa devre dışı
+        services.AddHttpClient("radiology");
+        services.AddSingleton<IRadiologyInferenceClient, HttpRadiologyInferenceClient>();
 
         services.AddHostedService<OutboxProcessor>();
         services.AddHostedService<DicomGroupingWindowProcessor>();

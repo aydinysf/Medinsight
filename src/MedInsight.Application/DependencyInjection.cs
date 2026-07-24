@@ -11,6 +11,7 @@ using MedInsight.Application.Matching;
 using MedInsight.Application.Notifications;
 using MedInsight.Application.Patients;
 using MedInsight.Application.Quality;
+using MedInsight.Application.Radiology;
 using MedInsight.Application.Quality.Criteria;
 using MedInsight.Domain.Cases.Events;
 using MedInsight.Domain.Common;
@@ -41,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<RejectVerificationHandler>();
         services.AddSingleton<DoctorMatchingEngine>();
         services.AddScoped<GetDoctorMatchesQueryHandler>();
+        services.AddScoped<GetImageFindingsQueryHandler>();
         services.AddScoped<DoctorActionContext>();
         services.AddScoped<StartConsultationHandler>();
         services.AddScoped<SendConsultationMessageHandler>();
@@ -68,6 +70,10 @@ public static class DependencyInjection
 
         // Health Route Engine abonesi (ADR-002)
         services.AddScoped<IDomainEventHandler<AIAnalysisCompleted>, OnAIAnalysisCompletedUpdateRoute>();
+
+        // Radiology Inference aboneleri (ADR-010, ADR-014)
+        services.AddScoped<IDomainEventHandler<DicomStudyGrouped>, OnDicomStudyGroupedRunInference>();
+        services.AddScoped<IDomainEventHandler<ImageFindingAdded>, OnImageFindingAddedEscalationCheck>();
 
         // Identity & Verification abonesi (reviewer-profile.md)
         services.AddScoped<IDomainEventHandler<MedInsight.Domain.Identity.Events.DoctorVerified>, OnDoctorVerifiedCreateReviewerProfile>();

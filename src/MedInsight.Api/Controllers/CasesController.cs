@@ -3,6 +3,7 @@ using MedInsight.Application.Cases;
 using MedInsight.Application.Consultations;
 using MedInsight.Application.HealthRoutes;
 using MedInsight.Application.Matching;
+using MedInsight.Application.Radiology;
 using MedInsight.TimelineService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,6 +22,7 @@ public sealed class CasesController(
     GetDoctorMatchesQueryHandler getDoctorMatches,
     ReviewAiAnalysisHandler reviewAnalysis,
     RequestEscalationHandler requestEscalation,
+    GetImageFindingsQueryHandler getImageFindings,
     ITimelineStore timeline) : ControllerBase
 {
     [HttpPost]
@@ -91,6 +93,17 @@ public sealed class CasesController(
         CancellationToken cancellationToken)
     {
         var result = await getDoctorMatches.HandleAsync(id, specialty, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    /// <summary>Deneysel görüntü bulguları — ana AI analizinden ayrı blok, zorunlu disclaimer (ADR-010).</summary>
+    [HttpGet("{id:guid}/image-findings")]
+    [ProducesResponseType<IReadOnlyList<ImageFindingDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<ImageFindingDto>>> GetImageFindings(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await getImageFindings.HandleAsync(id, cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 

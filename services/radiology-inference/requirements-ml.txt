@@ -1,0 +1,5 @@
+# MONAI backend'i için — varsayılan kurulumda YOKTUR (TODO(radiology-model))
+# pip install -r requirements-ml.txt
+torch==2.5.1
+monai==1.4.0
+SimpleITK==2.4.0

@@ -8,6 +8,7 @@ namespace MedInsight.Infrastructure.Storage;
 public sealed class MinioObjectStorage : IObjectStorage
 {
     private readonly IMinioClient _client;
+    private readonly IMinioClient _presignClient;
     private readonly string _bucket;
     private volatile bool _bucketEnsured;
 
@@ -17,11 +18,34 @@ public sealed class MinioObjectStorage : IObjectStorage
             ?? throw new InvalidOperationException("'Storage:Endpoint' yapılandırılmamış.");
 
         _bucket = configuration["Storage:Bucket"] ?? "medinsight-documents";
+        var useSsl = configuration.GetValue("Storage:UseSsl", false);
         _client = new MinioClient()
             .WithEndpoint(endpoint)
             .WithCredentials(configuration["Storage:AccessKey"], configuration["Storage:SecretKey"])
-            .WithSSL(configuration.GetValue("Storage:UseSsl", false))
+            .WithSSL(useSsl)
             .Build();
+
+        // Presigned URL'ler tüketici perspektifinden erişilebilir olmalı — API host'ta,
+        // radyoloji servisi container'da koşarken adresler farklıdır (dev topolojisi).
+        var presignEndpoint = configuration["Storage:PresignEndpoint"] ?? endpoint;
+        _presignClient = presignEndpoint == endpoint
+            ? _client
+            : new MinioClient()
+                .WithEndpoint(presignEndpoint)
+                .WithCredentials(configuration["Storage:AccessKey"], configuration["Storage:SecretKey"])
+                .WithSSL(useSsl)
+                .Build();
+    }
+
+    public async Task<string> GetPresignedReadUrlAsync(string key, TimeSpan validFor, CancellationToken cancellationToken = default)
+    {
+        await EnsureBucketAsync(cancellationToken);
+
+        return await _presignClient.PresignedGetObjectAsync(
+            new PresignedGetObjectArgs()
+                .WithBucket(_bucket)
+                .WithObject(key)
+                .WithExpiry((int)validFor.TotalSeconds));
     }
 
     public async Task UploadAsync(string key, Stream content, string contentType, CancellationToken cancellationToken = default)

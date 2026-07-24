@@ -26,6 +26,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
         builder.HasOne(c => c.HealthRoute).WithOne().HasForeignKey<HealthRoute>(r => r.CaseId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(c => c.Consultations).WithOne().HasForeignKey(x => x.CaseId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(c => c.Treatments).WithOne().HasForeignKey(t => t.CaseId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(c => c.ImageFindings).WithOne().HasForeignKey(f => f.CaseId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -115,6 +116,21 @@ public sealed class TreatmentConfiguration : IEntityTypeConfiguration<Treatment>
         builder.Property(t => t.Description).HasMaxLength(8000).IsRequired();
         builder.Property(t => t.FollowUpDate).HasColumnType("date");
         builder.HasIndex(t => t.CaseId);
+    }
+}
+
+public sealed class ImageFindingConfiguration : IEntityTypeConfiguration<ImageFinding>
+{
+    public void Configure(EntityTypeBuilder<ImageFinding> builder)
+    {
+        builder.HasKey(f => f.Id);
+        builder.Property(f => f.ModelName).HasMaxLength(200).IsRequired();
+        builder.Property(f => f.ModelSource).HasMaxLength(50).IsRequired();
+        builder.Property(f => f.OutputType).HasMaxLength(50).IsRequired();
+        builder.Property(f => f.Description).HasMaxLength(4000).IsRequired();
+        builder.Property(f => f.RawOutputJson).HasColumnType("jsonb").IsRequired();
+        builder.Property(f => f.Disclaimer).HasMaxLength(1000).IsRequired();
+        builder.HasIndex(f => f.CaseId);
     }
 }
 

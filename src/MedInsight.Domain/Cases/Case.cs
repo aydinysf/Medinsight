@@ -29,6 +29,7 @@ public sealed class Case : AggregateRoot
     private readonly List<HealthRouteSnapshot> _healthRouteSnapshots = [];
     private readonly List<Consultation> _consultations = [];
     private readonly List<Treatment> _treatments = [];
+    private readonly List<ImageFinding> _imageFindings = [];
 
     private Case()
     {
@@ -57,6 +58,8 @@ public sealed class Case : AggregateRoot
     public IReadOnlyCollection<Consultation> Consultations => _consultations.AsReadOnly();
 
     public IReadOnlyCollection<Treatment> Treatments => _treatments.AsReadOnly();
+
+    public IReadOnlyCollection<ImageFinding> ImageFindings => _imageFindings.AsReadOnly();
 
     public IReadOnlyCollection<CaseMember> Members => _members.AsReadOnly();
 
@@ -490,6 +493,25 @@ public sealed class Case : AggregateRoot
         }
 
         return treatment;
+    }
+
+    /// <summary>
+    /// Doğrulanmamış görüntü modeli bulgusu ekler (ADR-010): AiAnalysis'ten AYRI
+    /// yaşar, DifferentialDiagnosis'a hiçbir yoldan bağlanamaz, disclaimer zorunlu.
+    /// </summary>
+    public ImageFinding AddImageFinding(
+        Guid? studyId,
+        string modelName,
+        string modelSource,
+        string outputType,
+        string description,
+        string rawOutputJson,
+        string disclaimer)
+    {
+        var finding = ImageFinding.Create(Id, studyId, modelName, modelSource, outputType, description, rawOutputJson, disclaimer);
+        _imageFindings.Add(finding);
+        Raise(new ImageFindingAdded { CaseId = Id, FindingId = finding.Id, StudyId = studyId, ModelName = modelName });
+        return finding;
     }
 
     /// <summary>ADR-014 MVP: vendor çağrısı yok — öncelik en üste çıkar, timeline'a not düşer.</summary>

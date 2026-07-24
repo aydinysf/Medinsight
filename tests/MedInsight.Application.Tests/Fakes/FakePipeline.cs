@@ -18,6 +18,9 @@ public sealed class FakeObjectStorage : IObjectStorage
 
     public Task<byte[]> DownloadAsync(string key, CancellationToken cancellationToken = default) =>
         Task.FromResult(Objects[key]);
+
+    public Task<string> GetPresignedReadUrlAsync(string key, TimeSpan validFor, CancellationToken cancellationToken = default) =>
+        Task.FromResult($"https://fake-storage/{key}");
 }
 
 public sealed class FakeDicomReader : IDicomMetadataReader

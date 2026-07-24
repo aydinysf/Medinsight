@@ -68,7 +68,8 @@ public sealed class OnAIAnalysisCompletedEscalationCheck(ICaseRepository cases) 
         }
 
         var hasHighRiskDifferential = analysis.DifferentialDiagnoses.Any(d => d.RiskLevel >= RiskLevel.High);
-        var hasUnvalidatedFinding = analysis.Findings.Any(f => f.Source == AiFindingSource.OpenSourceImageModel);
+        var hasUnvalidatedFinding = analysis.Findings.Any(f => f.Source == AiFindingSource.OpenSourceImageModel)
+            || medicalCase.ImageFindings.Count > 0;
         if (!hasHighRiskDifferential || !hasUnvalidatedFinding)
         {
             return;

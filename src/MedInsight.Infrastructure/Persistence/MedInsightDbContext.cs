@@ -50,6 +50,8 @@ public sealed class MedInsightDbContext(DbContextOptions<MedInsightDbContext> op
 
     public DbSet<Treatment> Treatments => Set<Treatment>();
 
+    public DbSet<ImageFinding> ImageFindings => Set<ImageFinding>();
+
     public DbSet<TimelineEntry> TimelineEntries => Set<TimelineEntry>();
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();

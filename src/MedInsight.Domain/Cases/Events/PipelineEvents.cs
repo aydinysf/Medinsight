@@ -33,3 +33,13 @@ public sealed record RoutingDecided : DomainEvent
 
     public required DocumentRoute Route { get; init; }
 }
+
+/// <summary>Doğrulanmamış görüntü modeli bulgusu eklendi (ADR-010 — yalnızca bilgilendirici).</summary>
+public sealed record ImageFindingAdded : DomainEvent
+{
+    public required Guid FindingId { get; init; }
+
+    public Guid? StudyId { get; init; }
+
+    public required string ModelName { get; init; }
+}
