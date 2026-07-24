@@ -10,7 +10,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddAiOrchestration(this IServiceCollection services)
     {
-        // Sağlayıcı seçimi ileride config'e bağlanır; MVP: deterministik stub.
+        // TODO(llm-provider): Gerçek LLM entegrasyonu — yapılacaklar:
+        //   1. ClaudeLlmClient : ILlmClient yaz (Anthropic API; model/prompt sürümünü LlmResult'ta döndür).
+        //   2. Seçimi config'e bağla: "Ai:Provider" = "Stub" | "Claude" (OCR'daki Ocr:Provider deseniyle aynı).
+        //   3. API anahtarı secrets manager'dan gelir, asla appsettings'e yazılmaz (security-architecture.md).
+        //   Guardrails/persona/pipeline değişmez — yalnızca bu kayıt ve yeni sınıf.
         services.AddSingleton<ILlmClient, StubLlmClient>();
 
         services.AddSingleton<IntentDetector>();

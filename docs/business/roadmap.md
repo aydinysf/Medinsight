@@ -65,6 +65,12 @@
 - Observability: OpenTelemetry (log/trace/metric), correlationId zorunlu; rate limiting + `Retry-After`.
 - **DoD:** Kritik aksiyonlar audit'te; bildirimler event'ten akıyor; uçtan uca trace görülebiliyor.
 
+### WP-LLM — Gerçek LLM Sağlayıcı Entegrasyonu (tarih esnek, WP8'den önce)
+- `ClaudeLlmClient : ILlmClient` implementasyonu (bkz. `src/MedInsight.AIOrchestration/DependencyInjection.cs` içindeki `TODO(llm-provider)`).
+- Sağlayıcı seçimi `Ai:Provider` config anahtarına bağlanır; API anahtarı secrets manager'dan.
+- Guardrails/persona/pipeline değişmez — StubLlmClient dev/test için kalır.
+- **DoD:** Gerçek model ile analiz üretiliyor; guardrail testleri gerçek çıktıyla da geçiyor.
+
 ### WP8 — Stabilizasyon ve Pilot (5–16 Eki) ★ MVP
 - Test kapsama hedefleri, güvenlik/KVKK gözden geçirmesi, yük testi (bulk upload).
 - CI/CD: build → test → statik analiz → staging otomatik → prod manuel onay.

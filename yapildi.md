@@ -47,6 +47,10 @@
   - Not: Case açılışında ilk rota snapshot'ı (ADR-002 Git modeli: append-only zincir, PreviousVersionId, tek current). AIAnalysisRequested kalite geçişinde otomatik. Guardrails 3 kapı: confidence eşiği (Ai:ConfidenceThreshold=0.6, ADR-004 → DoctorReviewPriorityRaised), kapsam kontrolü (tanı/doz regex → zorunlu yönlendirme metni), kaynak izlenebilirliği (belgeye dayanmayan bulgu + ona dayanan tanı adayı elenir). ADR-010 domain'de zorlanıyor: OpenSourceImageModel bulgusu DifferentialDiagnosis'u besleyemez + zorunlu disclaimer. PII: modele yalnız klinik veri; belge içeriği yalnızca context alanında (prompt-injection savunması yapısal). ILlmClient soyutlaması — MVP'de deterministik StubLlmClient (tanı adayı üretmez), gerçek sağlayıcı config ile bağlanacak. Yeni endpoint'ler: GET cases/{id}/analyses, /health-route, /health-route/snapshots. 89 birim testi
   - Teknik not: StubLlmClient bölme hatası — Windows CRLF nedeniyle context section split başarısızdı, normalize edildi
 
+- [Docs] Gerçek LLM entegrasyonu ertelenmiş iş olarak kayda alındı
+  - Dosya: src/MedInsight.AIOrchestration/DependencyInjection.cs (TODO(llm-provider) — 3 adımlı talimat), docs/business/roadmap.md (WP-LLM paketi)
+  - Not: ClaudeLlmClient : ILlmClient + Ai:Provider config anahtarı + secrets manager. WP8'den önce yapılacak.
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

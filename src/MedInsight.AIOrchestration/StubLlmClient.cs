@@ -4,6 +4,7 @@ namespace MedInsight.AIOrchestration;
 /// Gerçek LLM sağlayıcısı bağlanana kadar deterministik yer tutucu.
 /// Tanı adayı ÜRETMEZ (guardrails: emin olmadığın yerde sus); yalnızca eldeki
 /// belge metinlerinden yorumsuz bulgu ve özet çıkarır. Metin yoksa güven düşüktür.
+/// Gerçek sağlayıcıya geçiş için bkz. DependencyInjection.cs — TODO(llm-provider).
 /// </summary>
 public sealed class StubLlmClient : ILlmClient
 {
