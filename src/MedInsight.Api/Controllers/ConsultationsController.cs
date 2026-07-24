@@ -40,6 +40,7 @@ public sealed class ConsultationsController(
     }
 
     [HttpPost("{consultationId:guid}/messages")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("messages")]
     [ProducesResponseType<ConsultationMessageDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

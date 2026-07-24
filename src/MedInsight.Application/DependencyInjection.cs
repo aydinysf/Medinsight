@@ -8,6 +8,7 @@ using MedInsight.Application.Documents;
 using MedInsight.Application.HealthRoutes;
 using MedInsight.Application.Ingestion;
 using MedInsight.Application.Matching;
+using MedInsight.Application.Notifications;
 using MedInsight.Application.Patients;
 using MedInsight.Application.Quality;
 using MedInsight.Application.Quality.Criteria;
@@ -76,6 +77,14 @@ public static class DependencyInjection
         services.AddScoped<IDomainEventHandler<ConsultationCompleted>, OnConsultationCompletedUpdateAvailability>();
         services.AddScoped<IDomainEventHandler<AIAnalysisReviewed>, OnAIAnalysisReviewedUpdateReviewerProfile>();
         services.AddScoped<IDomainEventHandler<AIAnalysisCompleted>, OnAIAnalysisCompletedEscalationCheck>();
+
+        // Notification Engine aboneleri (notification-engine.md)
+        services.AddScoped<IDomainEventHandler<DocumentClassificationFailed>, NotifyOnDocumentClassificationFailed>();
+        services.AddScoped<IDomainEventHandler<AIAnalysisCompleted>, NotifyOnAIAnalysisCompleted>();
+        services.AddScoped<IDomainEventHandler<DoctorReviewPriorityRaised>, NotifyOnDoctorReviewPriorityRaised>();
+        services.AddScoped<IDomainEventHandler<ConsultationMessageSent>, NotifyOnConsultationMessageSent>();
+        services.AddScoped<IDomainEventHandler<MedInsight.Domain.Identity.Events.DoctorVerified>, NotifyOnDoctorVerified>();
+        services.AddScoped<IDomainEventHandler<MedInsight.Domain.Identity.Events.DoctorVerificationRejected>, NotifyOnDoctorVerificationRejected>();
 
         return services;
     }

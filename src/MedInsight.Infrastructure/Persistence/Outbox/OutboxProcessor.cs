@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using MedInsight.Domain.Common;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,9 @@ public sealed class OutboxProcessor(IServiceScopeFactory scopeFactory, ILogger<O
     private const int BatchSize = 20;
     private const int MaxRetries = 5;
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
+
+    /// <summary>Asenkron event işleme, correlationId etiketiyle trace'e bağlanır (observability.md).</summary>
+    private static readonly ActivitySource ActivitySource = new("MedInsight.Outbox");
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -51,6 +55,11 @@ public sealed class OutboxProcessor(IServiceScopeFactory scopeFactory, ILogger<O
 
         foreach (var message in messages)
         {
+            using var activity = ActivitySource.StartActivity($"outbox.dispatch {message.EventType}");
+            activity?.SetTag("event.type", message.EventType);
+            activity?.SetTag("event.correlation_id", message.CorrelationId);
+            activity?.SetTag("case.id", message.CaseId);
+
             try
             {
                 await DispatchAsync(scope.ServiceProvider, message, cancellationToken);

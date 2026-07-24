@@ -1,9 +1,13 @@
 using MedInsight.Application.Abstractions.Auth;
+using MedInsight.Application.Abstractions.Notifications;
 using MedInsight.Application.Abstractions.Repositories;
 using MedInsight.Application.Abstractions.Storage;
 using MedInsight.Application.Abstractions.TextExtraction;
+using MedInsight.Domain.Common;
+using MedInsight.Infrastructure.Audit;
 using MedInsight.Infrastructure.Auth;
 using MedInsight.Infrastructure.Ingestion;
+using MedInsight.Infrastructure.Notifications;
 using MedInsight.Infrastructure.Persistence;
 using MedInsight.Infrastructure.TextExtraction;
 using MedInsight.Infrastructure.Persistence.Outbox;
@@ -53,6 +57,12 @@ public static class DependencyInjection
         {
             services.AddSingleton<IOcrProvider, StubOcrProvider>();
         }
+
+        // Audit Service: her domain event bir audit kaydı üretir (audit-service.md)
+        services.AddScoped(typeof(IDomainEventHandler<>), typeof(AuditEventHandler<>));
+
+        // Notification Engine iletim katmanı (MVP: Simulated log kanalı)
+        services.AddScoped<INotificationService, LogNotificationService>();
 
         services.AddHostedService<OutboxProcessor>();
         services.AddHostedService<DicomGroupingWindowProcessor>();

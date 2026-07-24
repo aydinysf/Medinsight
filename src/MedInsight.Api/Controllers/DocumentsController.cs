@@ -20,6 +20,7 @@ public sealed class DocumentsController(
     /// Idempotency-Key başlığı tekrarlanan isteği yeniden işlemez.
     /// </summary>
     [HttpPost]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("uploads")]
     [RequestSizeLimit(1_073_741_824)]
     [RequestFormLimits(MultipartBodyLengthLimit = 1_073_741_824, ValueCountLimit = 2000)]
     [ProducesResponseType<UploadDocumentsResultDto>(StatusCodes.Status202Accepted)]

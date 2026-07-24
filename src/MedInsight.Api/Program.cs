@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using MedInsight.AIOrchestration;
 using MedInsight.AIOrchestration.Pipeline;
 using MedInsight.Api.Auth;
@@ -20,8 +22,32 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Npgsql;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Observability (docs/architecture/observability.md): OpenTelemetry + log satırlarında traceId.
+builder.Logging.Configure(options =>
+    options.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.SpanId);
+
+var otelBuilder = builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("MedInsight.Api"))
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddNpgsql()
+            .AddSource("MedInsight.Outbox");
+
+        // OTLP endpoint tanımlıysa dışa aktar (örn. Jaeger/Grafana Tempo); yoksa yalnız log korelasyonu.
+        if (!string.IsNullOrWhiteSpace(builder.Configuration["Otel:Endpoint"]))
+        {
+            tracing.AddOtlpExporter(o => o.Endpoint = new Uri(builder.Configuration["Otel:Endpoint"]!));
+        }
+    });
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -70,6 +96,46 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
+
+// Rate limiting (docs/architecture/rate-limiting-idempotency.md): endpoint bazlı strateji,
+// 429 yanıtları Retry-After başlığı taşır (zorunlu).
+static string RateLimitPartitionKey(HttpContext context) =>
+    context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+    ?? context.Connection.RemoteIpAddress?.ToString()
+    ?? "anonymous";
+
+builder.Services.AddRateLimiter(limiter =>
+{
+    limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    limiter.OnRejected = (context, _) =>
+    {
+        var retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var value)
+            ? ((int)value.TotalSeconds).ToString()
+            : "30";
+        context.HttpContext.Response.Headers.RetryAfter = retryAfter;
+        return ValueTask.CompletedTask;
+    };
+
+    // Standart IP+kullanıcı limiti (GET dahil tüm istekler)
+    limiter.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(RateLimitPartitionKey(context), _ =>
+            new FixedWindowRateLimiterOptions { PermitLimit = 300, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+
+    // Toplu yükleme: kullanıcı başına eşzamanlı ~10 istek sınırı
+    limiter.AddPolicy("uploads", context =>
+        RateLimitPartition.GetConcurrencyLimiter(RateLimitPartitionKey(context), _ =>
+            new ConcurrencyLimiterOptions { PermitLimit = 10, QueueLimit = 10, QueueProcessingOrder = QueueProcessingOrder.OldestFirst }));
+
+    // Mesajlaşma: orta seviye + burst koruması
+    limiter.AddPolicy("messages", context =>
+        RateLimitPartition.GetSlidingWindowLimiter(RateLimitPartitionKey(context), _ =>
+            new SlidingWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 6, QueueLimit = 0 }));
+
+    // Admin onayı: admin başına düşük limit
+    limiter.AddPolicy("admin-approve", context =>
+        RateLimitPartition.GetFixedWindowLimiter(RateLimitPartitionKey(context), _ =>
+            new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+});
 
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -155,6 +221,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHub<MedInsight.Api.Hubs.ConsultationHub>("/hubs/consultations");

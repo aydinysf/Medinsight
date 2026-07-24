@@ -56,6 +56,12 @@ public sealed class MedInsightDbContext(DbContextOptions<MedInsightDbContext> op
 
     public DbSet<Storage.IdempotencyRecord> IdempotencyRecords => Set<Storage.IdempotencyRecord>();
 
+    public DbSet<Audit.AuditLog> AuditLogs => Set<Audit.AuditLog>();
+
+    public DbSet<Notifications.NotificationPreference> NotificationPreferences => Set<Notifications.NotificationPreference>();
+
+    public DbSet<Notifications.NotificationLog> NotificationLogs => Set<Notifications.NotificationLog>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(MedInsightDbContext).Assembly);

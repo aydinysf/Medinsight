@@ -3,8 +3,11 @@ using System.Text.Json;
 using MedInsight.Application.Abstractions.Storage;
 using MedInsight.Application.Admin;
 using MedInsight.Application.Doctors;
+using MedInsight.Infrastructure.Audit;
+using MedInsight.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace MedInsight.Api.Controllers;
 
@@ -15,8 +18,26 @@ public sealed class AdminController(
     ListPendingVerificationsQueryHandler listPending,
     ApproveVerificationHandler approve,
     RejectVerificationHandler reject,
-    IIdempotencyStore idempotency) : ControllerBase
+    IIdempotencyStore idempotency,
+    MedInsightDbContext db) : ControllerBase
 {
+    /// <summary>KVKK denetim sorgusu — yalnızca Admin rolü (audit-service.md).</summary>
+    [HttpGet("audit-logs")]
+    [ProducesResponseType<IReadOnlyList<AuditLog>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<AuditLog>>> GetAuditLogs(
+        [FromQuery] Guid? entityId,
+        [FromQuery] int take = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var query = db.AuditLogs.AsNoTracking().OrderByDescending(a => a.OccurredAtUtc).AsQueryable();
+        if (entityId is not null)
+        {
+            query = query.Where(a => a.EntityId == entityId);
+        }
+
+        return Ok(await query.Take(Math.Clamp(take, 1, 200)).ToListAsync(cancellationToken));
+    }
+
     [HttpGet("doctor-verifications")]
     [ProducesResponseType<IReadOnlyList<PendingVerificationDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<PendingVerificationDto>>> GetPending(CancellationToken cancellationToken) =>
@@ -24,6 +45,7 @@ public sealed class AdminController(
 
     /// <summary>Idempotency-Key zorunlu — audit bütünlüğü (bkz. rate-limiting-idempotency.md).</summary>
     [HttpPost("doctor-verifications/{id:guid}/approve")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("admin-approve")]
     [ProducesResponseType<VerificationDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
