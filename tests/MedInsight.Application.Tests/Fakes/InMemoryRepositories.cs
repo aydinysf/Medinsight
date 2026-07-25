@@ -31,6 +31,9 @@ public sealed class InMemoryPatientRepository : IPatientRepository
     public Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(Patients.FirstOrDefault(p => p.Id == id));
 
+    public Task<Patient?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Patients.FirstOrDefault(p => p.UserId == userId));
+
     public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(Patients.Any(p => p.Id == id));
 

@@ -72,6 +72,11 @@
   - MONAI gerçek modeli: TODO(radiology-model) — requirements-ml.txt + BraTS ağırlıkları + RADIOLOGY_BACKEND=monai; yeni açık kaynak model = yeni ADR
   - Dilim B (frontend ile birlikte): OHIF Viewer + minimal WADO-RS (ADR-012)
 
+- [Feature] FE-1: Frontend başlangıcı — React + Vite + TS (ADR-017), kimlik + hasta akışı
+  - Dosya: docs/adr/adr-017-frontend-stack.md, frontend/** (Vite React 19 TS + Tailwind v4 + TanStack Query + RHF/zod + react-router + @microsoft/signalr), backend: GET /api/v1/patients/me + CORS (Cors:Origins config)
+  - Not: Takım React standartları uygulandı (feature klasörleri, axios interceptor, KEYS deseni). Sayfalar: login/kayıt, Hızır ana ekranı (Analiz §8: "Merhaba X / Ben Hızır" + devam eden vaka + CDSS uyarısı), vaka listesi/oluşturma, vaka detayı 6 sekme (Rota [current+versiyon zinciri], Belgeler [toplu yükleme + durum rozetleri], Hızır Analizi [persona mesajı + bulgular + AYRI amber "Deneysel" bloğu — ADR-010 UI kuralı], Doktorlar [öneri + skor dökümü + "atama değil" notu + konsültasyon başlat], Mesajlar [SignalR canlı + REST fallback], Timeline). Polling 5sn — pipeline ilerleyişi UI'a canlı yansıyor. Browser'da uçtan uca doğrulandı: kayıt→giriş→vaka→yükleme→DoctorReview rozeti+Hızır mesajı+deneysel blok ekran görüntüsüyle. TS derleme temiz, konsol hatasız
+  - FE-2 (sırada): doktor paneli (inceleme kuyruğu, analiz onay/düzeltme, tedavi planı, müsaitlik), FE-3: admin + OHIF
+
 ## 2026-07-05
 
 - [Feature] MedInsight çözümü sıfırdan oluşturuldu (.NET 9, Clean Architecture, CDSS)

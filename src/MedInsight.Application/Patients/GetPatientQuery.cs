@@ -26,4 +26,19 @@ public sealed class GetPatientQueryHandler(IPatientRepository patients, IUserRep
             ? null
             : new PatientDto(patient.Id, user.Id, user.FullName, user.Email, patient.DateOfBirth, patient.Sex, patient.CreatedAtUtc);
     }
+
+    /// <summary>Oturum sahibinin kendi hasta profili — kimlik JWT'den gelir.</summary>
+    public async Task<PatientDto?> HandleMeAsync(CancellationToken cancellationToken = default)
+    {
+        var patient = await patients.GetByUserIdAsync(currentUser.UserId, cancellationToken);
+        if (patient is null)
+        {
+            return null;
+        }
+
+        var user = await users.GetByIdAsync(patient.UserId, cancellationToken);
+        return user is null
+            ? null
+            : new PatientDto(patient.Id, user.Id, user.FullName, user.Email, patient.DateOfBirth, patient.Sex, patient.CreatedAtUtc);
+    }
 }

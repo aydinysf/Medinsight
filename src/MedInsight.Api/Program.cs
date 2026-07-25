@@ -140,6 +140,14 @@ builder.Services.AddRateLimiter(limiter =>
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+// Frontend SPA için CORS (ADR-017) — yalnız yapılandırılan origin'ler.
+var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
+if (corsOrigins.Length > 0)
+{
+    builder.Services.AddCors(options => options.AddPolicy("frontend", policy =>
+        policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+}
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -219,6 +227,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+if (corsOrigins.Length > 0)
+{
+    app.UseCors("frontend");
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();

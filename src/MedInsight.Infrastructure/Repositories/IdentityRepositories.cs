@@ -26,6 +26,9 @@ public sealed class PatientRepository(MedInsightDbContext db) : IPatientReposito
     public Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         db.Patients.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
+    public Task<Patient?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
+        db.Patients.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
+
     public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default) =>
         db.Patients.AsNoTracking().AnyAsync(p => p.Id == id, cancellationToken);
 

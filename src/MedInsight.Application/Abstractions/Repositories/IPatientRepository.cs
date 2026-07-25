@@ -8,6 +8,8 @@ public interface IPatientRepository
 
     Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<Patient?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+
     Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

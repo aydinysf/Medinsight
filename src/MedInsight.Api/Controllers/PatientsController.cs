@@ -24,6 +24,15 @@ public sealed class PatientsController(
         return CreatedAtAction(nameof(GetById), new { id = patient.Id }, patient);
     }
 
+    [HttpGet("me")]
+    [ProducesResponseType<PatientDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PatientDto>> GetMe(CancellationToken cancellationToken)
+    {
+        var patient = await getPatient.HandleMeAsync(cancellationToken);
+        return patient is null ? NotFound() : patient;
+    }
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType<PatientDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
