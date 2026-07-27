@@ -9,15 +9,18 @@ import { RegisterPage } from './features/auth/RegisterPage';
 import { CaseDetailPage } from './features/cases/CaseDetailPage';
 import { CasesPage } from './features/cases/CasesPage';
 import { NewCasePage } from './features/cases/NewCasePage';
+import { AdminHomePage } from './features/admin/AdminHomePage';
 import { DoctorHomePage } from './features/doctor/DoctorHomePage';
 import './index.css';
 import { AuthProvider, RequireAuth, useAuth } from './lib/auth';
 import { HomePage } from './pages/HomePage';
 
-/** Rol bazlı giriş: doktor panele, diğerleri Hızır karşılamasına. */
+/** Rol bazlı giriş: doktor ve admin kendi paneline, diğerleri Hızır karşılamasına. */
 function RoleHome() {
   const { role } = useAuth();
-  return role === 'Doctor' ? <Navigate to="/doctor" replace /> : <HomePage />;
+  if (role === 'Doctor') return <Navigate to="/doctor" replace />;
+  if (role === 'Admin') return <Navigate to="/admin" replace />;
+  return <HomePage />;
 }
 
 const queryClient = new QueryClient({
@@ -37,6 +40,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <RoleHome /> },
       { path: '/doctor', element: <DoctorHomePage /> },
+      { path: '/admin', element: <AdminHomePage /> },
       { path: '/cases', element: <CasesPage /> },
       { path: '/cases/new', element: <NewCasePage /> },
       { path: '/cases/:id', element: <CaseDetailPage /> },

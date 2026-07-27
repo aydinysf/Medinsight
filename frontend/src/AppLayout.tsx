@@ -13,6 +13,8 @@ export function AppLayout() {
           <nav className="flex items-center gap-4 text-sm">
             {role === 'Doctor' ? (
               <Link to="/doctor" className="text-gray-600 hover:text-brand-600">Panelim</Link>
+            ) : role === 'Admin' ? (
+              <Link to="/admin" className="text-gray-600 hover:text-brand-600">Yönetim</Link>
             ) : (
               <Link to="/cases" className="text-gray-600 hover:text-brand-600">Vakalarım</Link>
             )}

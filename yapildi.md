@@ -138,3 +138,7 @@
 - [Docs] Roadmap'e frontend paketleri ve netleşen öncelik sırası eklendi
   - Dosya: docs/business/roadmap.md
   - Not: FE-1 ✅, FE-2 ✅, sırada WP-LLM (maliyet notuyla) → Hızır chat → FE-3 → WP8; bilinçli ertelenenler listelendi (OHIF, Study Comparison ADR-013, Caregiver, MONAI+OCR).
+
+- [Feature] FE-3: Admin paneli (doğrulama onay/red + belge görüntüleme + audit log)
+  - Dosya: frontend/src/features/admin/**, frontend/src/{main,AppLayout}.tsx, frontend/src/lib/types.ts, src/MedInsight.Application/Admin/DoctorVerificationAdmin.cs, src/MedInsight.Api/Controllers/AdminController.cs
+  - Not: Rol bazlı yönlendirme Admin → /admin. İki sekme: (1) Doktor Doğrulamaları — bekleyen başvurular QR çözüm önerisiyle listelenir, Onayla (Idempotency-Key otomatik) / Reddet (gerekçe zorunlu, doktora gösterilir), "Belgeyi görüntüle" JWT korumalı blob akışıyla yeni sekmede açar; (2) Audit Log — son 50 kayıt, entityId filtresi, Detay ile metadata JSON + correlationId. Yeni uç: GET /admin/doctor-verifications/{id}/document (API üzerinden stream; presigned URL tarayıcı için kullanılmadı — dev'de PresignEndpoint yalnızca konteyner ağına açık). Tarayıcıda canlı doğrulandı: onay → doktor Verified, red → doktor tarafında gerekçe görünür, audit'te DoctorVerified/DoctorVerificationRejected kayıtları. 125 test geçti.

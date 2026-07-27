@@ -163,6 +163,30 @@ export interface DoctorMe {
   verifications: Verification[];
 }
 
+export interface PendingVerification {
+  verificationId: string;
+  doctorId: string;
+  doctorFullName: string;
+  specialty: string;
+  licenseNumber: string;
+  documentType: string;
+  documentUrl: string;
+  qrParsedData: string | null;
+  submittedAtUtc: string;
+}
+
+export interface AuditLog {
+  id: string;
+  actorId: string | null;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  occurredAtUtc: string;
+  ipAddress: string | null;
+  metadataJson: string;
+  correlationId: string;
+}
+
 export type ReviewPriority = 'Normal' | 'High';
 
 export interface DoctorQueueItem {

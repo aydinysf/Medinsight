@@ -1,5 +1,6 @@
 using MedInsight.Application.Abstractions.Auth;
 using MedInsight.Application.Abstractions.Repositories;
+using MedInsight.Application.Abstractions.Storage;
 using MedInsight.Application.Doctors;
 using MedInsight.Domain.Common;
 using MedInsight.Domain.Identity;
@@ -35,6 +36,37 @@ public sealed class ListPendingVerificationsQueryHandler(IDoctorRepository docto
         }
 
         return result.OrderBy(v => v.SubmittedAtUtc).ToList();
+    }
+}
+
+public sealed record VerificationDocumentContent(byte[] Content, string FileName, string ContentType);
+
+/// <summary>
+/// Doğrulama belgesi API üzerinden stream edilir (JWT korumalı) — presigned URL
+/// tarayıcı için kullanılmaz; dev'de PresignEndpoint yalnızca konteyner ağına açıktır.
+/// </summary>
+public sealed class GetVerificationDocumentQueryHandler(IDoctorRepository doctors, IObjectStorage storage)
+{
+    public async Task<VerificationDocumentContent?> HandleAsync(Guid verificationId, CancellationToken cancellationToken = default)
+    {
+        var doctor = await doctors.GetByVerificationIdAsync(verificationId, cancellationToken);
+        var verification = doctor?.Verifications.FirstOrDefault(v => v.Id == verificationId);
+        if (verification is null)
+        {
+            return null;
+        }
+
+        var fileName = Path.GetFileName(verification.DocumentUrl);
+        var contentType = Path.GetExtension(fileName).ToLowerInvariant() switch
+        {
+            ".pdf" => "application/pdf",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            _ => "application/octet-stream",
+        };
+
+        var content = await storage.DownloadAsync(verification.DocumentUrl, cancellationToken);
+        return new VerificationDocumentContent(content, fileName, contentType);
     }
 }
 

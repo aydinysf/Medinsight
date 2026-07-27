@@ -18,9 +18,26 @@ public sealed class AdminController(
     ListPendingVerificationsQueryHandler listPending,
     ApproveVerificationHandler approve,
     RejectVerificationHandler reject,
+    GetVerificationDocumentQueryHandler getDocument,
     IIdempotencyStore idempotency,
     MedInsightDbContext db) : ControllerBase
 {
+    /// <summary>Doğrulama belgesini stream eder — inceleme için (inline).</summary>
+    [HttpGet("doctor-verifications/{id:guid}/document")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> GetDocument(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await getDocument.HandleAsync(id, cancellationToken);
+        if (result is null)
+        {
+            return NotFound();
+        }
+
+        Response.Headers.ContentDisposition = $"inline; filename=\"{result.FileName}\"";
+        return File(result.Content, result.ContentType);
+    }
+
     /// <summary>KVKK denetim sorgusu — yalnızca Admin rolü (audit-service.md).</summary>
     [HttpGet("audit-logs")]
     [ProducesResponseType<IReadOnlyList<AuditLog>>(StatusCodes.Status200OK)]

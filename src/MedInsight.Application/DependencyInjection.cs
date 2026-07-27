@@ -42,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<CloseCaseHandler>();
         services.AddScoped<ReopenCaseHandler>();
         services.AddScoped<ListPendingVerificationsQueryHandler>();
+        services.AddScoped<GetVerificationDocumentQueryHandler>();
         services.AddScoped<ApproveVerificationHandler>();
         services.AddScoped<RejectVerificationHandler>();
         services.AddSingleton<DoctorMatchingEngine>();
