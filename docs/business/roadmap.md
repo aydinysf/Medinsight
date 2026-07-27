@@ -76,6 +76,23 @@
 - CI/CD: build → test → statik analiz → staging otomatik → prod manuel onay.
 - Pilot senaryosu: Analiz Raporu §17'deki 10 adımın uçtan uca gösterimi.
 
+## Frontend Paketleri ve Güncel Öncelik Sırası (27 Tem 2026'da netleşti)
+
+Backend WP0–WP7 tamamlandıktan sonra ürün sahibiyle netleşen sıra:
+
+1. **FE-1 — Hasta arayüzü** ✅ (React 19 + Vite + Tailwind v4, ADR-017): kayıt/giriş, vaka, belge yükleme, Hızır analizi, doktor önerisi, mesajlaşma, zaman çizelgesi.
+2. **FE-2 — Doktor paneli** ✅ (27 Tem): doktor kaydı + doğrulama belgesi yükleme UI, inceleme kuyruğu (`GET /doctors/me/cases`, ReviewPriority sıralı), AI analiz onay/düzeltme, klinik not, tedavi planı formu, müsaitlik toggle'ı, vaka kapatma/yeniden açma uçları.
+3. **WP-LLM** — Anthropic API anahtarı temin edilecek (maliyet onayına bağlı; tahmin: analiz başına ~1 kuruş mertebesi, aşağıdaki nota bakınız).
+4. **Hızır chat** — WP-LLM sonrası: Intent katmanı genişletmesi + hasta tarafında sohbet UI.
+5. **FE-3 — Admin paneli + OHIF viewer** (WADO-RS ile birlikte).
+6. **WP8 — Stabilizasyon** (güvenlik seti, CI/CD, staging, yük testi).
+
+**Bilinçli ertelenenler** (ürün sahibi onayıyla): OHIF DICOM viewer (FE-3'e), Study Comparison (ADR-013), Caregiver akışı, MONAI gerçek model + OCR tessdata aktivasyonu.
+
+> **LLM maliyet notu:** Hızır analizi düşük hacimli, analiz başına tek çağrıdır (~10K girdi + ~1,5K çıktı token).
+> Claude Sonnet ile analiz başına ≈ $0.05, Haiku ile ≈ $0.02, Opus ile ≈ $0.09 mertebesi.
+> Ayda 500 analizde Sonnet ≈ $25/ay. Ödeme kullandıkça-öde; minimum taahhüt yok.
+
 ## Kilometre Taşları
 
 | # | Tarih | Kriter |

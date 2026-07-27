@@ -2,7 +2,7 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from './lib/auth';
 
 export function AppLayout() {
-  const { signOut } = useAuth();
+  const { signOut, role } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -11,7 +11,11 @@ export function AppLayout() {
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           <Link to="/" className="text-lg font-semibold text-brand-600">MedInsight</Link>
           <nav className="flex items-center gap-4 text-sm">
-            <Link to="/cases" className="text-gray-600 hover:text-brand-600">Vakalarım</Link>
+            {role === 'Doctor' ? (
+              <Link to="/doctor" className="text-gray-600 hover:text-brand-600">Panelim</Link>
+            ) : (
+              <Link to="/cases" className="text-gray-600 hover:text-brand-600">Vakalarım</Link>
+            )}
             <button
               onClick={() => {
                 signOut();

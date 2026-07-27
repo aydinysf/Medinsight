@@ -22,6 +22,8 @@ public sealed class CasesController(
     GetDoctorMatchesQueryHandler getDoctorMatches,
     ReviewAiAnalysisHandler reviewAnalysis,
     RequestEscalationHandler requestEscalation,
+    CloseCaseHandler closeCase,
+    ReopenCaseHandler reopenCase,
     GetImageFindingsQueryHandler getImageFindings,
     ITimelineStore timeline) : ControllerBase
 {
@@ -128,6 +130,32 @@ public sealed class CasesController(
     {
         var result = await requestEscalation.HandleAsync(id, cancellationToken);
         return result is null ? NotFound() : Accepted();
+    }
+
+    /// <summary>FollowUp → Closed — vakada görevli doktor veya admin (state machine dokümanı).</summary>
+    [HttpPost("{id:guid}/close")]
+    [Authorize(Roles = "Doctor,Admin")]
+    [ProducesResponseType<CaseDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<CaseDto>> Close(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await closeCase.HandleAsync(id, cancellationToken);
+        return result is null ? NotFound() : result;
+    }
+
+    /// <summary>Closed → FollowUp — hasta (Manage üyesi) veya admin; geçmiş korunur, Draft'a dönülmez.</summary>
+    [HttpPost("{id:guid}/reopen")]
+    [Authorize(Roles = "Patient,Caregiver,Admin")]
+    [ProducesResponseType<CaseDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<CaseDto>> Reopen(Guid id, ReopenCase command, CancellationToken cancellationToken)
+    {
+        var result = await reopenCase.HandleAsync(id, command, cancellationToken);
+        return result is null ? NotFound() : result;
     }
 
     [HttpGet("{id:guid}/timeline")]

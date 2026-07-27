@@ -38,6 +38,13 @@ public sealed class CaseRepository(MedInsightDbContext db) : ICaseRepository
             .OrderByDescending(c => c.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Case>> GetByDoctorIdAsync(Guid doctorId, CancellationToken cancellationToken = default) =>
+        await db.Cases.AsNoTracking()
+            .Include(c => c.Consultations)
+            .Where(c => c.Consultations.Any(x => x.DoctorId == doctorId))
+            .OrderByDescending(c => c.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         db.SaveChangesAsync(cancellationToken);
 }

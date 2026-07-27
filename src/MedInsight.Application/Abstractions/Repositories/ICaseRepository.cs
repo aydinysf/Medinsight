@@ -11,6 +11,9 @@ public interface ICaseRepository
 
     Task<IReadOnlyList<Case>> GetByPatientIdAsync(Guid patientId, CancellationToken cancellationToken = default);
 
+    /// <summary>Doktorun konsültasyonu olan vakalar (inceleme kuyruğu) — Consultations dahil, izlenmez.</summary>
+    Task<IReadOnlyList<Case>> GetByDoctorIdAsync(Guid doctorId, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<ConsultationMessage>> GetConsultationMessagesAsync(Guid consultationId, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

@@ -55,6 +55,10 @@ export function LoginPage() {
           Hesabın yok mu?{' '}
           <Link to="/register" className="font-medium text-brand-600 hover:underline">Kayıt ol</Link>
         </p>
+        <p className="mt-1 text-center text-sm text-gray-500">
+          Doktor musunuz?{' '}
+          <Link to="/register/doctor" className="font-medium text-brand-600 hover:underline">Doktor kaydı</Link>
+        </p>
       </div>
     </div>
   );

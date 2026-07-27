@@ -58,6 +58,9 @@ public sealed class InMemoryCaseRepository : ICaseRepository
     public Task<IReadOnlyList<Case>> GetByPatientIdAsync(Guid patientId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<Case>>(Cases.Where(c => c.PatientId == patientId).ToList());
 
+    public Task<IReadOnlyList<Case>> GetByDoctorIdAsync(Guid doctorId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Case>>(Cases.Where(c => c.Consultations.Any(x => x.DoctorId == doctorId)).ToList());
+
     public Task<IReadOnlyList<ConsultationMessage>> GetConsultationMessagesAsync(Guid consultationId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<ConsultationMessage>>(
             Cases.SelectMany(c => c.Consultations)

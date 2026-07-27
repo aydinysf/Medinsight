@@ -11,8 +11,30 @@ namespace MedInsight.Api.Controllers;
 public sealed class DoctorsController(
     RegisterDoctorHandler registerDoctor,
     SubmitVerificationHandler submitVerification,
-    SetAvailabilityHandler setAvailability) : ControllerBase
+    SetAvailabilityHandler setAvailability,
+    GetMyDoctorProfileQueryHandler getMyProfile,
+    GetDoctorReviewQueueQueryHandler getReviewQueue) : ControllerBase
 {
+    /// <summary>Doktor paneli girişi: profil + müsaitlik + doğrulama geçmişi.</summary>
+    [HttpGet("me")]
+    [Authorize(Roles = "Doctor")]
+    [ProducesResponseType<DoctorMeDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<DoctorMeDto>> GetMe(CancellationToken cancellationToken)
+    {
+        return await getMyProfile.HandleAsync(cancellationToken);
+    }
+
+    /// <summary>İnceleme kuyruğu — ReviewPriority sıralı (ADR-004 eskalasyonları öne alır).</summary>
+    [HttpGet("me/cases")]
+    [Authorize(Roles = "Doctor")]
+    [ProducesResponseType<IReadOnlyList<DoctorQueueItemDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<DoctorQueueItemDto>>> GetReviewQueue(CancellationToken cancellationToken)
+    {
+        return Ok(await getReviewQueue.HandleAsync(cancellationToken));
+    }
+
     [HttpPost]
     [AllowAnonymous]
     [ProducesResponseType<DoctorDto>(StatusCodes.Status201Created)]

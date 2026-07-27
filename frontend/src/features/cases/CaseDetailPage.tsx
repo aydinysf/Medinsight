@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { DoctorActionsTab } from '../doctor/components/DoctorActionsTab';
+import { useAuth } from '../../lib/auth';
 import { useCase, useHealthRoute } from './api';
 import { AnalysesTab } from './components/AnalysesTab';
 import { DoctorsTab } from './components/DoctorsTab';
@@ -9,7 +11,7 @@ import { RouteTab } from './components/RouteTab';
 import { TimelineTab } from './components/TimelineTab';
 import { statusLabels } from './labels';
 
-const tabs = [
+const baseTabs = [
   { key: 'route', label: 'Sağlık Rotası' },
   { key: 'documents', label: 'Belgeler' },
   { key: 'analyses', label: 'Hızır Analizi' },
@@ -18,13 +20,20 @@ const tabs = [
   { key: 'timeline', label: 'Zaman Çizelgesi' },
 ] as const;
 
-type TabKey = (typeof tabs)[number]['key'];
+const doctorTab = { key: 'doctor-actions', label: 'Doktor Aksiyonları' } as const;
+
+type TabKey = (typeof baseTabs)[number]['key'] | typeof doctorTab.key;
 
 export function CaseDetailPage() {
   const { id = '' } = useParams();
+  const { role } = useAuth();
   const medicalCase = useCase(id);
   const route = useHealthRoute(id);
-  const [tab, setTab] = useState<TabKey>('route');
+  const isDoctor = role === 'Doctor';
+  const tabs = isDoctor
+    ? ([doctorTab, ...baseTabs.filter((t) => t.key !== 'doctors')] as const)
+    : baseTabs;
+  const [tab, setTab] = useState<TabKey>(isDoctor ? 'doctor-actions' : 'route');
 
   if (medicalCase.isLoading) return <p className="text-sm text-gray-500">Yükleniyor…</p>;
   if (!medicalCase.data) return <p className="text-sm text-red-600">Vaka bulunamadı.</p>;
@@ -60,6 +69,7 @@ export function CaseDetailPage() {
       </div>
 
       <div className="mt-4">
+        {tab === 'doctor-actions' && <DoctorActionsTab caseId={id} />}
         {tab === 'route' && <RouteTab caseId={id} />}
         {tab === 'documents' && <DocumentsTab caseId={id} />}
         {tab === 'analyses' && <AnalysesTab caseId={id} />}

@@ -127,3 +127,14 @@
   - Not: Host portu 5432→5434 (5432/5433 başka container'larda dolu); localhost yerine 127.0.0.1 (::1'i wslrelay yakalıyor, "Exception while reading from stream" hatası); Database:ApplyMigrationsOnStartup bayrağı eklendi, compose'da true
 
 - Not: Build 0 uyarı / 0 hata. Commit YAPILMADI (istenmedi).
+
+## 2026-07-27
+
+- [Feature] FE-2: Doktor paneli (backend uçları + React arayüzü)
+  - Dosya: src/MedInsight.Application/Doctors/GetDoctorQueries.cs, src/MedInsight.Application/Cases/CloseReopenCase.cs, src/MedInsight.Application/Analyses/GetCaseAnalysesQuery.cs, src/MedInsight.Api/Controllers/{DoctorsController,CasesController}.cs, src/MedInsight.Infrastructure/Repositories/CaseRepository.cs, frontend/src/features/doctor/**, frontend/src/features/auth/RegisterDoctorPage.tsx, frontend/src/{main,AppLayout}.tsx, frontend/src/lib/types.ts
+  - Not: Yeni uçlar — GET /doctors/me (profil+müsaitlik+doğrulama geçmişi), GET /doctors/me/cases (inceleme kuyruğu: aktif konsültasyon > ReviewPriority > tarih sıralı), POST /cases/{id}/close (doktor üye veya admin), POST /cases/{id}/reopen (Manage üyesi veya admin, gerekçe zorunlu). AiAnalysisDto'ya ReviewDecision/ReviewedByDoctorId/ReviewedAtUtc eklendi. Frontend: rol bazlı yönlendirme (Doctor → /doctor), doktor kayıt sayfası, doğrulama belgesi yükleme kartı (ADR-007 admin onayı bekleniyor durumları), müsaitlik toggle (ADR-009 manuel override + sisteme bırak), kuyruk listesi (Öncelikli rozeti), vaka detayında "Doktor Aksiyonları" sekmesi (AI onay/düzelt + zorunlu düzeltme notu, klinik not, tedavi planı + kontrol tarihi, ikinci görüş, konsültasyon tamamlama, FollowUp'ta vaka kapatma). Uçtan uca tarayıcıda doğrulandı: kayıt→doğrulama→onay→konsültasyon→analiz onayı→tedavi planı (Takipte)→kapatma (Kapalı)→hasta reopen (FollowUp). 125 test geçti.
+  - Teknik not: Storage:Endpoint localhost→127.0.0.1 düzeltildi — wslrelay [::1]:9500'ü dinlediğinden MinIO upload'ları sessizce kayboluyordu, sınıflandırma DocumentClassificationFailed üretiyordu (postgres'teki ::1 sorununun aynısı).
+
+- [Docs] Roadmap'e frontend paketleri ve netleşen öncelik sırası eklendi
+  - Dosya: docs/business/roadmap.md
+  - Not: FE-1 ✅, FE-2 ✅, sırada WP-LLM (maliyet notuyla) → Hızır chat → FE-3 → WP8; bilinçli ertelenenler listelendi (OHIF, Study Comparison ADR-013, Caregiver, MONAI+OCR).

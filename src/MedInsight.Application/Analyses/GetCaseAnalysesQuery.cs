@@ -20,7 +20,10 @@ public sealed record AiAnalysisDto(
     string PatientMessage,
     IReadOnlyList<AiFindingDto> Findings,
     IReadOnlyList<DifferentialDiagnosisDto> DifferentialDiagnoses,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    Domain.Cases.Events.AnalysisReviewDecision? ReviewDecision,
+    Guid? ReviewedByDoctorId,
+    DateTime? ReviewedAtUtc);
 
 public static class AiAnalysisMappings
 {
@@ -35,7 +38,10 @@ public static class AiAnalysisMappings
             analysis.PatientMessage,
             analysis.Findings.Select(f => new AiFindingDto(f.Id, f.Description, f.Source, f.SourceDocumentId, f.Disclaimer)).ToList(),
             analysis.DifferentialDiagnoses.Select(d => new DifferentialDiagnosisDto(d.Id, d.Name, d.ConfidenceScore, d.RiskLevel, d.SourceFindingIds)).ToList(),
-            analysis.CreatedAtUtc);
+            analysis.CreatedAtUtc,
+            analysis.ReviewDecision,
+            analysis.ReviewedByDoctorId,
+            analysis.ReviewedAtUtc);
 }
 
 public sealed class GetCaseAnalysesQueryHandler(ICaseRepository cases, ICurrentUser currentUser)

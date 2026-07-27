@@ -37,6 +37,10 @@ public static class DependencyInjection
         services.AddScoped<RegisterDoctorHandler>();
         services.AddScoped<SubmitVerificationHandler>();
         services.AddScoped<SetAvailabilityHandler>();
+        services.AddScoped<GetMyDoctorProfileQueryHandler>();
+        services.AddScoped<GetDoctorReviewQueueQueryHandler>();
+        services.AddScoped<CloseCaseHandler>();
+        services.AddScoped<ReopenCaseHandler>();
         services.AddScoped<ListPendingVerificationsQueryHandler>();
         services.AddScoped<ApproveVerificationHandler>();
         services.AddScoped<RejectVerificationHandler>();
