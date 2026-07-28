@@ -66,6 +66,9 @@ public static class DependencyInjection
         services.AddSingleton<ResponseComposer>();
         services.AddSingleton<HizirOrchestrator>();
 
+        services.AddScoped<SendHizirChatMessageHandler>();
+        services.AddScoped<GetHizirChatMessagesQueryHandler>();
+
         services.AddScoped<IDomainEventHandler<AIAnalysisRequested>, OnAIAnalysisRequested>();
         services.AddScoped<IDomainEventHandler<AIAnalysisCompleted>, OnAIAnalysisCompletedConfidenceCheck>();
 

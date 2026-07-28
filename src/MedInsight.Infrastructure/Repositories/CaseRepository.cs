@@ -22,6 +22,7 @@ public sealed class CaseRepository(MedInsightDbContext db) : ICaseRepository
             .Include(c => c.Consultations)
             .Include(c => c.Treatments)
             .Include(c => c.ImageFindings)
+            .Include(c => c.HizirChatMessages)
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 

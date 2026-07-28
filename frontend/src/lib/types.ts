@@ -207,6 +207,13 @@ export interface Treatment {
   createdAtUtc: string;
 }
 
+export interface HizirChatMessage {
+  id: string;
+  isFromHizir: boolean;
+  content: string;
+  createdAtUtc: string;
+}
+
 export interface ConsultationMessage {
   id: string;
   consultationId: string;

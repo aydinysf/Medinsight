@@ -46,4 +46,11 @@ public sealed class StubLlmClient : ILlmClient
 
         return Task.FromResult(new LlmResult(summary, findings, [], confidence, Model, Prompt));
     }
+
+    /// <summary>Deterministik sohbet yanıtı — gerçek sağlayıcı yokken UI/testler için.</summary>
+    public Task<string> ChatAsync(LlmChatRequest request, CancellationToken cancellationToken = default) =>
+        Task.FromResult(
+            "Şu an deneme modundayım ve sorunu tam olarak yanıtlayamıyorum. " +
+            "Vakandaki belgeler ve analizler doktorunun görebileceği şekilde derlendi; " +
+            "tıbbi soruların için doktorunla görüşmeni öneririm.");
 }

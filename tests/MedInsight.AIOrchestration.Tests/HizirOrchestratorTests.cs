@@ -9,6 +9,7 @@ public class HizirOrchestratorTests
 {
     private static HizirOrchestrator Orchestrator(ILlmClient? llm = null, decimal threshold = 0.6m)
     {
+        var client = llm ?? new StubLlmClient();
         var guardrails = new Guardrails(Options.Create(new AiOptions { ConfidenceThreshold = threshold }));
         return new HizirOrchestrator(
             new IntentDetector(),
@@ -16,9 +17,10 @@ public class HizirOrchestratorTests
             new AgentSelector(),
             new CaseToolInvoker(),
             new MemoryContextBuilder(),
-            new ReasoningEngine(llm ?? new StubLlmClient()),
+            new ReasoningEngine(client),
             guardrails,
-            new ResponseComposer(guardrails));
+            new ResponseComposer(guardrails),
+            client);
     }
 
     private static Case CaseWithText(string text = "MR raporu: sol frontal bolgede sinyal degisikligi.")
@@ -128,9 +130,36 @@ public class HizirOrchestratorTests
         // belge içeriği yalnızca ClinicalContext alanında taşınır (bkz. ReasoningEngine).
     }
 
-    private sealed class FakeLlm(LlmResult result) : ILlmClient
+    [Fact]
+    public async Task Chat_yaniti_kapsam_disi_ifadede_zorunlu_yonlendirmeyle_degistirilir()
+    {
+        var llm = new FakeLlm(
+            new LlmResult("s", [], [], 0.9m, "m", "p"),
+            chatReply: "Hastalığınız kesin migren, 500 mg al ve geçer.");
+
+        var reply = await Orchestrator(llm).ChatAsync(CaseWithText(), [], "Bana ne olduğunu söyle");
+
+        Assert.Equal(Guardrails.ScopeRedirect, reply);
+    }
+
+    [Fact]
+    public async Task Chat_uygun_yanit_degismeden_gecer()
+    {
+        var llm = new FakeLlm(
+            new LlmResult("s", [], [], 0.9m, "m", "p"),
+            chatReply: "Raporunda sinyal değişikliği ifadesi geçiyor; bunun anlamını doktorun değerlendirecek.");
+
+        var reply = await Orchestrator(llm).ChatAsync(CaseWithText(), [], "Raporumda ne yazıyor?");
+
+        Assert.Contains("sinyal değişikliği", reply);
+    }
+
+    private sealed class FakeLlm(LlmResult result, string chatReply = "yanıt") : ILlmClient
     {
         public Task<LlmResult> CompleteAsync(LlmRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(result);
+
+        public Task<string> ChatAsync(LlmChatRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(chatReply);
     }
 }

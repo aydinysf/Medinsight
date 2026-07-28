@@ -30,6 +30,7 @@ public sealed class Case : AggregateRoot
     private readonly List<Consultation> _consultations = [];
     private readonly List<Treatment> _treatments = [];
     private readonly List<ImageFinding> _imageFindings = [];
+    private readonly List<HizirChatMessage> _hizirChatMessages = [];
 
     private Case()
     {
@@ -60,6 +61,8 @@ public sealed class Case : AggregateRoot
     public IReadOnlyCollection<Treatment> Treatments => _treatments.AsReadOnly();
 
     public IReadOnlyCollection<ImageFinding> ImageFindings => _imageFindings.AsReadOnly();
+
+    public IReadOnlyCollection<HizirChatMessage> HizirChatMessages => _hizirChatMessages.AsReadOnly();
 
     public IReadOnlyCollection<CaseMember> Members => _members.AsReadOnly();
 
@@ -512,6 +515,17 @@ public sealed class Case : AggregateRoot
         _imageFindings.Add(finding);
         Raise(new ImageFindingAdded { CaseId = Id, FindingId = finding.Id, StudyId = studyId, ModelName = modelName });
         return finding;
+    }
+
+    /// <summary>
+    /// Hızır sohbet mesajı (ADR-018). Domain event üretmez; kapalı vakada da
+    /// sorulabilir (hasta geçmişe dönük soru sorabilir).
+    /// </summary>
+    public HizirChatMessage AddHizirChatMessage(Guid? senderUserId, bool isFromHizir, string content)
+    {
+        var message = HizirChatMessage.Create(Id, senderUserId, isFromHizir, content);
+        _hizirChatMessages.Add(message);
+        return message;
     }
 
     /// <summary>ADR-014 MVP: vendor çağrısı yok — öncelik en üste çıkar, timeline'a not düşer.</summary>

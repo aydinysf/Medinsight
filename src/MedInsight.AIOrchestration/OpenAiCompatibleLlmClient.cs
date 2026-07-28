@@ -82,6 +82,43 @@ public sealed class OpenAiCompatibleLlmClient(HttpClient http, IOptions<OpenAiCo
         return LlmJsonContract.ParseResult(text, opts.Model, PromptVersion);
     }
 
+    /// <summary>Hızır sohbeti (ADR-018): bağlam ilk user dönüşünde, sistem talimatı sabit.</summary>
+    public async Task<string> ChatAsync(LlmChatRequest request, CancellationToken cancellationToken = default)
+    {
+        var opts = options.Value;
+        if (string.IsNullOrWhiteSpace(opts.ApiKey))
+        {
+            throw new InvalidOperationException("Ai:OpenAiCompatible:ApiKey tanımlı değil.");
+        }
+
+        var messages = new List<object>
+        {
+            new { role = "system", content = request.SystemInstructions },
+            new { role = "user", content = $"[BAĞLAM — vaka verileri]\n{request.ClinicalContext}" },
+            new { role = "assistant", content = "Bağlamı aldım; hastanın sorularını bu vaka verilerine ve kurallarıma göre yanıtlayacağım." },
+        };
+        messages.AddRange(request.History.Select(t => (object)new { role = t.Role == "assistant" ? "assistant" : "user", content = t.Content }));
+        messages.Add(new { role = "user", content = request.UserMessage });
+
+        var body = new { model = opts.Model, temperature = 0.4, messages };
+
+        using var message = new HttpRequestMessage(HttpMethod.Post, $"{opts.BaseUrl.TrimEnd('/')}/chat/completions")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(body, SerializerOptions), Encoding.UTF8, "application/json"),
+        };
+        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", opts.ApiKey);
+
+        using var response = await http.SendAsync(message, cancellationToken);
+        var payload = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"LLM sohbet isteği başarısız ({(int)response.StatusCode}): {Truncate(payload, 500)}");
+        }
+
+        return ExtractMessageContent(payload)
+            ?? throw new InvalidOperationException("LLM sohbet yanıtında mesaj içeriği yok.");
+    }
+
     /// <summary>choices[0].message.content.</summary>
     private static string? ExtractMessageContent(string payload)
     {

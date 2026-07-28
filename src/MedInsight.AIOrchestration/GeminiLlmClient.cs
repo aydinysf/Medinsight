@@ -75,6 +75,53 @@ public sealed class GeminiLlmClient(HttpClient http, IOptions<GeminiOptions> opt
         return LlmJsonContract.ParseResult(text, opts.Model, PromptVersion);
     }
 
+    /// <summary>Hızır sohbeti (ADR-018): bağlam ilk user dönüşünde, sistem talimatı sabit.</summary>
+    public async Task<string> ChatAsync(LlmChatRequest request, CancellationToken cancellationToken = default)
+    {
+        var opts = options.Value;
+        if (string.IsNullOrWhiteSpace(opts.ApiKey))
+        {
+            throw new InvalidOperationException("Ai:Gemini:ApiKey tanımlı değil.");
+        }
+
+        var contents = new List<object>
+        {
+            new { role = "user", parts = new[] { new { text = $"[BAĞLAM — vaka verileri]\n{request.ClinicalContext}" } } },
+            new { role = "model", parts = new[] { new { text = "Bağlamı aldım; hastanın sorularını bu vaka verilerine ve kurallarıma göre yanıtlayacağım." } } },
+        };
+        contents.AddRange(request.History.Select(t => (object)new
+        {
+            role = t.Role == "assistant" ? "model" : "user",
+            parts = new[] { new { text = t.Content } },
+        }));
+        contents.Add(new { role = "user", parts = new[] { new { text = request.UserMessage } } });
+
+        var body = new
+        {
+            systemInstruction = new { parts = new[] { new { text = request.SystemInstructions } } },
+            contents,
+            generationConfig = new { temperature = 0.4 },
+        };
+
+        using var message = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"{opts.Endpoint.TrimEnd('/')}/v1beta/models/{opts.Model}:generateContent")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(body, SerializerOptions), Encoding.UTF8, "application/json"),
+        };
+        message.Headers.Add("x-goog-api-key", opts.ApiKey);
+
+        using var response = await http.SendAsync(message, cancellationToken);
+        var payload = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Gemini sohbet isteği başarısız ({(int)response.StatusCode}): {Truncate(payload, 500)}");
+        }
+
+        return ExtractCandidateText(payload)
+            ?? throw new InvalidOperationException("Gemini sohbet yanıtında metin içeriği yok.");
+    }
+
     /// <summary>candidates[0].content.parts[*].text birleştirilir.</summary>
     private static string? ExtractCandidateText(string payload)
     {

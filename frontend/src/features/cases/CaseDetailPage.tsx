@@ -7,6 +7,7 @@ import { AnalysesTab } from './components/AnalysesTab';
 import { DoctorsTab } from './components/DoctorsTab';
 import { DocumentsTab } from './components/DocumentsTab';
 import { MessagesTab } from './components/MessagesTab';
+import { HizirChatTab } from './components/HizirChatTab';
 import { RouteTab } from './components/RouteTab';
 import { TimelineTab } from './components/TimelineTab';
 import { statusLabels } from './labels';
@@ -15,6 +16,7 @@ const baseTabs = [
   { key: 'route', label: 'Sağlık Rotası' },
   { key: 'documents', label: 'Belgeler' },
   { key: 'analyses', label: 'Hızır Analizi' },
+  { key: 'hizir-chat', label: "Hızır'a Sor" },
   { key: 'doctors', label: 'Doktorlar' },
   { key: 'messages', label: 'Mesajlar' },
   { key: 'timeline', label: 'Zaman Çizelgesi' },
@@ -73,6 +75,7 @@ export function CaseDetailPage() {
         {tab === 'route' && <RouteTab caseId={id} />}
         {tab === 'documents' && <DocumentsTab caseId={id} />}
         {tab === 'analyses' && <AnalysesTab caseId={id} />}
+        {tab === 'hizir-chat' && <HizirChatTab caseId={id} />}
         {tab === 'doctors' && <DoctorsTab caseId={id} />}
         {tab === 'messages' && <MessagesTab caseId={id} />}
         {tab === 'timeline' && <TimelineTab caseId={id} />}

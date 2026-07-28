@@ -19,8 +19,25 @@ public sealed record LlmResult(
     string ModelVersion,
     string PromptVersion);
 
+/// <summary>Sohbet geçmişi dönüşü: Role = "user" | "assistant".</summary>
+public sealed record LlmChatTurn(string Role, string Content);
+
+/// <summary>
+/// Hızır sohbeti (ADR-018). Analizin JSON sözleşmesinden bağımsız serbest metin;
+/// prompt-injection savunması aynı: bağlam ve kullanıcı mesajları sistem
+/// talimatına asla karışmaz.
+/// </summary>
+public sealed record LlmChatRequest(
+    string SystemInstructions,
+    string ClinicalContext,
+    IReadOnlyList<LlmChatTurn> History,
+    string UserMessage);
+
 /// <summary>AI sağlayıcı soyutlaması — sağlayıcı değişimi Domain'e dokunmaz (layered-architecture.md).</summary>
 public interface ILlmClient
 {
     Task<LlmResult> CompleteAsync(LlmRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Serbest metin sohbet yanıtı (ADR-018) — çıktı Guardrails.EnforceScope'tan geçirilmelidir.</summary>
+    Task<string> ChatAsync(LlmChatRequest request, CancellationToken cancellationToken = default);
 }

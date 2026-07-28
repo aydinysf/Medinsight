@@ -52,6 +52,8 @@ public sealed class MedInsightDbContext(DbContextOptions<MedInsightDbContext> op
 
     public DbSet<ImageFinding> ImageFindings => Set<ImageFinding>();
 
+    public DbSet<HizirChatMessage> HizirChatMessages => Set<HizirChatMessage>();
+
     public DbSet<TimelineEntry> TimelineEntries => Set<TimelineEntry>();
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();

@@ -8,6 +8,7 @@ import type {
   ConsultationMessage,
   DoctorMatch,
   HealthRoute,
+  HizirChatMessage,
   HealthRouteSnapshot,
   ImageFinding,
   Patient,
@@ -26,6 +27,7 @@ const KEYS = {
   timeline: (id: string) => ['cases', id, 'timeline'] as const,
   matches: (id: string) => ['cases', id, 'doctor-matches'] as const,
   consultations: (id: string) => ['cases', id, 'consultations'] as const,
+  hizirChat: (id: string) => ['cases', id, 'hizir-chat'] as const,
   messages: (id: string, consultationId: string) => ['cases', id, 'consultations', consultationId, 'messages'] as const,
 };
 
@@ -102,6 +104,21 @@ export const useMessages = (caseId: string, consultationId: string | undefined) 
       api.get<ConsultationMessage[], ConsultationMessage[]>(`/cases/${caseId}/consultations/${consultationId}/messages`),
     enabled: !!consultationId,
   });
+
+export const useHizirChat = (caseId: string) =>
+  useQuery({
+    queryKey: KEYS.hizirChat(caseId),
+    queryFn: () => api.get<HizirChatMessage[], HizirChatMessage[]>(`/cases/${caseId}/hizir-chat`),
+  });
+
+export const useSendHizirMessage = (caseId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (message: string) =>
+      api.post<HizirChatMessage, HizirChatMessage>(`/cases/${caseId}/hizir-chat`, { message }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.hizirChat(caseId) }),
+  });
+};
 
 export interface CreateCaseDto {
   patientId: string;
