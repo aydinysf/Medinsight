@@ -53,7 +53,7 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddTimelineService();
 builder.Services.AddDicomServices();
-builder.Services.AddAiOrchestration();
+builder.Services.AddAiOrchestration(builder.Configuration);
 builder.Services.Configure<AiOptions>(builder.Configuration.GetSection(AiOptions.SectionName));
 
 builder.Services.AddHttpContextAccessor();

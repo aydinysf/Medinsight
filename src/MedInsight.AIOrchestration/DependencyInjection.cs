@@ -2,20 +2,29 @@ using MedInsight.AIOrchestration.Handlers;
 using MedInsight.AIOrchestration.Pipeline;
 using MedInsight.Domain.Cases.Events;
 using MedInsight.Domain.Common;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MedInsight.AIOrchestration;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddAiOrchestration(this IServiceCollection services)
+    public static IServiceCollection AddAiOrchestration(this IServiceCollection services, IConfiguration configuration)
     {
-        // TODO(llm-provider): Gerçek LLM entegrasyonu — yapılacaklar:
-        //   1. ClaudeLlmClient : ILlmClient yaz (Anthropic API; model/prompt sürümünü LlmResult'ta döndür).
-        //   2. Seçimi config'e bağla: "Ai:Provider" = "Stub" | "Claude" (OCR'daki Ocr:Provider deseniyle aynı).
-        //   3. API anahtarı secrets manager'dan gelir, asla appsettings'e yazılmaz (security-architecture.md).
-        //   Guardrails/persona/pipeline değişmez — yalnızca bu kayıt ve yeni sınıf.
-        services.AddSingleton<ILlmClient, StubLlmClient>();
+        // Sağlayıcı seçimi config'ten (Ocr:Provider deseniyle aynı). API anahtarları
+        // user-secrets / secrets manager'dan gelir, asla appsettings'e yazılmaz.
+        // Yeni sağlayıcı (örn. ClaudeLlmClient) eklemek = yeni ILlmClient sınıfı + buraya bir dal;
+        // guardrails/persona/pipeline değişmez.
+        var provider = configuration["Ai:Provider"] ?? "Stub";
+        if (string.Equals(provider, "Gemini", StringComparison.OrdinalIgnoreCase))
+        {
+            services.Configure<GeminiOptions>(configuration.GetSection(GeminiOptions.SectionName));
+            services.AddHttpClient<ILlmClient, GeminiLlmClient>(client => client.Timeout = TimeSpan.FromSeconds(100));
+        }
+        else
+        {
+            services.AddSingleton<ILlmClient, StubLlmClient>();
+        }
 
         services.AddSingleton<IntentDetector>();
         services.AddSingleton<AnalysisPlanner>();
