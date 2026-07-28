@@ -2,9 +2,13 @@ using MedInsight.AIOrchestration;
 
 namespace MedInsight.AIOrchestration.Tests;
 
-/// <summary>Ayrıştırma savunmacıdır: bozuk model çıktısı bulgu üretmez, düşük güvenle doktora düşer.</summary>
-public class GeminiLlmClientTests
+/// <summary>
+/// Ortak JSON sözleşmesi ayrıştırıcısı (Gemini + Kimi/DeepSeek/OpenAI-uyumlu istemciler)
+/// savunmacıdır: bozuk model çıktısı bulgu üretmez, düşük güvenle doktora düşer.
+/// </summary>
+public class LlmJsonContractTests
 {
+    private const string Prompt = "test-prompt-v1";
     private static readonly Guid DocId = Guid.Parse("11111111-2222-3333-4444-555555555555");
 
     [Fact]
@@ -19,7 +23,7 @@ public class GeminiLlmClientTests
             }
             """;
 
-        var result = GeminiLlmClient.ParseResult(json, "gemini-test");
+        var result = LlmJsonContract.ParseResult(json, "model-x", Prompt);
 
         Assert.Equal(0.81m, result.ConfidenceScore);
         Assert.Single(result.Findings);
@@ -27,8 +31,8 @@ public class GeminiLlmClientTests
         Assert.Single(result.Differentials);
         Assert.Equal("Medium", result.Differentials[0].RiskLevel);
         Assert.Equal([0], result.Differentials[0].SourceFindingIndexes);
-        Assert.Equal("gemini-test", result.ModelVersion);
-        Assert.Equal(GeminiLlmClient.PromptVersion, result.PromptVersion);
+        Assert.Equal("model-x", result.ModelVersion);
+        Assert.Equal(Prompt, result.PromptVersion);
     }
 
     [Fact]
@@ -36,7 +40,7 @@ public class GeminiLlmClientTests
     {
         var text = "```json\n{\"summary\": \"Özet\", \"confidence\": 0.7, \"findings\": [], \"differentials\": []}\n```";
 
-        var result = GeminiLlmClient.ParseResult(text, "gemini-test");
+        var result = LlmJsonContract.ParseResult(text, "model-x", Prompt);
 
         Assert.Equal("Özet", result.Summary);
         Assert.Equal(0.7m, result.ConfidenceScore);
@@ -45,7 +49,7 @@ public class GeminiLlmClientTests
     [Fact]
     public void Bozuk_json_bulgu_uretmez_ve_dusuk_guvenle_doner()
     {
-        var result = GeminiLlmClient.ParseResult("Elbette! İşte analiz: hasta kesin MS.", "gemini-test");
+        var result = LlmJsonContract.ParseResult("Elbette! İşte analiz: hasta kesin MS.", "model-x", Prompt);
 
         Assert.Empty(result.Findings);
         Assert.Empty(result.Differentials);
@@ -61,7 +65,7 @@ public class GeminiLlmClientTests
              "differentials": []}
             """;
 
-        var result = GeminiLlmClient.ParseResult(json, "gemini-test");
+        var result = LlmJsonContract.ParseResult(json, "model-x", Prompt);
 
         Assert.Single(result.Findings);
         Assert.Null(result.Findings[0].SourceDocumentId); // EnforceSourceTraceability bunu eler
@@ -72,7 +76,7 @@ public class GeminiLlmClientTests
     {
         var json = """{"summary": "s", "confidence": 7.5, "findings": [], "differentials": []}""";
 
-        var result = GeminiLlmClient.ParseResult(json, "gemini-test");
+        var result = LlmJsonContract.ParseResult(json, "model-x", Prompt);
 
         Assert.Equal(1m, result.ConfidenceScore);
     }
@@ -80,7 +84,7 @@ public class GeminiLlmClientTests
     [Fact]
     public void Eksik_alanlar_varsayilanlarla_tolere_edilir()
     {
-        var result = GeminiLlmClient.ParseResult("{}", "gemini-test");
+        var result = LlmJsonContract.ParseResult("{}", "model-x", Prompt);
 
         Assert.NotEmpty(result.Summary);
         Assert.Empty(result.Findings);

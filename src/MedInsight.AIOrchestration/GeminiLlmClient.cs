@@ -20,23 +20,12 @@ public sealed class GeminiOptions
 /// <summary>
 /// Google Gemini implementasyonu (generateContent REST API).
 /// Prompt-injection savunması korunur: belge içeriği yalnızca user içeriğine girer,
-/// sistem talimatları sabit kalır. Model JSON şemasına zorlanır (responseSchema);
-/// yine de ayrıştırma savunmacıdır — bozuk alanlar guardrail'lere takılacak şekilde
-/// düşük güvenle işaretlenir. Sağlayıcı seçimi: Ai:Provider (DependencyInjection.cs).
+/// sistem talimatları sabit kalır. Çıktı sözleşmesi ve savunmacı ayrıştırma
+/// LlmJsonContract'ta — sağlayıcılar arasında ortak. Sağlayıcı seçimi: Ai:Provider.
 /// </summary>
 public sealed class GeminiLlmClient(HttpClient http, IOptions<GeminiOptions> options) : ILlmClient
 {
     public const string PromptVersion = "hizir-gemini-prompt-v1";
-
-    private const string OutputContract =
-        "YANIT BİÇİMİ: Yalnızca geçerli JSON döndür, başka hiçbir metin yazma. Şema: " +
-        "{\"summary\": string (doktora yönelik yorumsuz özet, Türkçe), " +
-        "\"confidence\": number (0-1 arası; kanıt zayıfsa düşük ver), " +
-        "\"findings\": [{\"description\": string, \"sourceDocumentId\": string}], " +
-        "\"differentials\": [{\"name\": string, \"confidence\": number, \"riskLevel\": \"Low\"|\"Medium\"|\"High\", \"sourceFindingIndexes\": [int]}]}. " +
-        "KURALLAR: Her bulgunun sourceDocumentId'si, bağlamdaki [BELGE:<guid>] başlığındaki guid olmalıdır; " +
-        "belgeye dayandıramadığın bulguyu HİÇ yazma. differentials yalnızca olasılık sıralamasıdır, kesin tanı değildir; " +
-        "sourceFindingIndexes findings dizisindeki 0 tabanlı indekslerdir. Emin değilsen differentials boş bırak.";
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -56,7 +45,7 @@ public sealed class GeminiLlmClient(HttpClient http, IOptions<GeminiOptions> opt
 
         var body = new
         {
-            systemInstruction = new { parts = new[] { new { text = $"{request.SystemInstructions}\n\n{OutputContract}" } } },
+            systemInstruction = new { parts = new[] { new { text = $"{request.SystemInstructions}\n\n{LlmJsonContract.OutputContract}" } } },
             contents = new[]
             {
                 new { role = "user", parts = new[] { new { text = $"{request.ClinicalContext}\n\nGÖREV: {request.UserMessage}" } } },
@@ -76,14 +65,14 @@ public sealed class GeminiLlmClient(HttpClient http, IOptions<GeminiOptions> opt
         var payload = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            // 429 = ücretsiz katman dakika limiti; outbox yeniden dener (at-least-once).
+            // 429 = kota/kredi; outbox yeniden dener (at-least-once).
             throw new HttpRequestException($"Gemini isteği başarısız ({(int)response.StatusCode}): {Truncate(payload, 500)}");
         }
 
         var text = ExtractCandidateText(payload)
             ?? throw new InvalidOperationException("Gemini yanıtında metin içeriği yok (güvenlik bloğu olabilir).");
 
-        return ParseResult(text, opts.Model);
+        return LlmJsonContract.ParseResult(text, opts.Model, PromptVersion);
     }
 
     /// <summary>candidates[0].content.parts[*].text birleştirilir.</summary>
@@ -111,104 +100,6 @@ public sealed class GeminiLlmClient(HttpClient http, IOptions<GeminiOptions> opt
 
         return builder.Length > 0 ? builder.ToString() : null;
     }
-
-    /// <summary>Savunmacı ayrıştırma — model şemadan saparsa çıktı guardrail'lere düşük güvenle gider.</summary>
-    public static LlmResult ParseResult(string text, string model)
-    {
-        var json = StripCodeFences(text);
-
-        JsonDocument doc;
-        try
-        {
-            doc = JsonDocument.Parse(json);
-        }
-        catch (JsonException)
-        {
-            // Şemaya uymayan yanıt: bulgu üretme, düşük güvenle doktora bırak.
-            return new LlmResult(
-                "Model yanıtı beklenen biçimde değildi; değerlendirme için doktor incelemesi gereklidir.",
-                [], [], 0.2m, model, PromptVersion);
-        }
-
-        using (doc)
-        {
-            var root = doc.RootElement;
-            var summary = GetString(root, "summary")
-                ?? "Vaka belgeleri incelendi; ayrıntılı değerlendirme doktor incelemesindedir.";
-            var confidence = Math.Clamp(GetDecimal(root, "confidence") ?? 0.3m, 0m, 1m);
-
-            var findings = new List<LlmFinding>();
-            if (root.TryGetProperty("findings", out var findingsElement) && findingsElement.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var f in findingsElement.EnumerateArray())
-                {
-                    var description = GetString(f, "description");
-                    if (string.IsNullOrWhiteSpace(description))
-                    {
-                        continue;
-                    }
-
-                    Guid? sourceId = Guid.TryParse(GetString(f, "sourceDocumentId"), out var g) ? g : null;
-                    findings.Add(new LlmFinding(description, sourceId));
-                }
-            }
-
-            var differentials = new List<LlmDifferential>();
-            if (root.TryGetProperty("differentials", out var diffElement) && diffElement.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var d in diffElement.EnumerateArray())
-                {
-                    var name = GetString(d, "name");
-                    if (string.IsNullOrWhiteSpace(name))
-                    {
-                        continue;
-                    }
-
-                    var indexes = new List<int>();
-                    if (d.TryGetProperty("sourceFindingIndexes", out var idx) && idx.ValueKind == JsonValueKind.Array)
-                    {
-                        indexes.AddRange(idx.EnumerateArray()
-                            .Where(i => i.ValueKind == JsonValueKind.Number)
-                            .Select(i => i.GetInt32()));
-                    }
-
-                    differentials.Add(new LlmDifferential(
-                        name,
-                        Math.Clamp(GetDecimal(d, "confidence") ?? 0m, 0m, 1m),
-                        GetString(d, "riskLevel") ?? "Unknown",
-                        indexes));
-                }
-            }
-
-            return new LlmResult(summary, findings, differentials, confidence, model, PromptVersion);
-        }
-    }
-
-    private static string StripCodeFences(string text)
-    {
-        var trimmed = text.Trim();
-        if (trimmed.StartsWith("```", StringComparison.Ordinal))
-        {
-            var firstNewline = trimmed.IndexOf('\n');
-            var lastFence = trimmed.LastIndexOf("```", StringComparison.Ordinal);
-            if (firstNewline >= 0 && lastFence > firstNewline)
-            {
-                return trimmed[(firstNewline + 1)..lastFence].Trim();
-            }
-        }
-
-        return trimmed;
-    }
-
-    private static string? GetString(JsonElement element, string property) =>
-        element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String
-            ? value.GetString()
-            : null;
-
-    private static decimal? GetDecimal(JsonElement element, string property) =>
-        element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Number
-            ? value.GetDecimal()
-            : null;
 
     private static string Truncate(string value, int max) =>
         value.Length <= max ? value : value[..max] + "…";
