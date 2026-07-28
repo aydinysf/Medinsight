@@ -21,7 +21,10 @@ public sealed partial class Guardrails(IOptions<AiOptions> options)
     public const string ScopeRedirect =
         "Bu değerlendirme yalnızca bilgilendirme amaçlıdır; tanı ve tedavi kararları için doktorunuzla görüşmeniz gerekir.";
 
-    [GeneratedRegex(@"(kesin\s+tan[ıi]|te[şs]his\s+koy|tan[ıi]\s+koy|hastal[ıi][ğg][ıi]n[ıi]z\s+kesin|almal[ıi]s[ıi]n[ıi]z\s+\d+\s*mg|\d+\s*mg\s+al|doz[uü]n[uü]z|tedavi\s+olarak\s+.+\s+kullan)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    // Yalnızca İDDİA kipleri yakalanır ("tanı koyuyorum", "tanınız: ...");
+    // olumsuzlama/açıklama ("ben tanı koymam", "tanı koyması doktorunundur")
+    // serbesttir — aksi halde Hızır'ın sınırlarını anlattığı her yanıt siliniyordu.
+    [GeneratedRegex(@"(kesin\s+tan[ıi]|tan[ıi]n[ıi]z\s*:|te[şs]hisiniz\s*:|te[şs]his\s+koy(uyorum|dum|d[uü]k|ar[ıi]m|acağ[ıi]m|abilirim)|tan[ıi]\s+koy(uyorum|dum|d[uü]k|ar[ıi]m|acağ[ıi]m|abilirim)|hastal[ıi][ğg][ıi]n[ıi]z\s+kesin|almal[ıi]s[ıi]n[ıi]z\s+\d+\s*mg|\d+\s*mg\s+al|doz[uü]n[uü]z|tedavi\s+olarak\s+.+\s+kullan)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex ForbiddenScopeRegex();
 
     /// <summary>Kapı 1 — confidence eşiği.</summary>

@@ -42,11 +42,22 @@ public sealed class SendHizirChatMessageHandler(ICaseRepository cases, HizirOrch
             .Select(m => new LlmChatTurn(m.IsFromHizir ? "assistant" : "user", m.Content))
             .ToList();
 
+        // İki aşamalı kayıt: LLM hata verse bile hastanın sorusu kaybolmaz.
         medicalCase.AddHizirChatMessage(currentUser.UserId, isFromHizir: false, command.Message);
+        await cases.SaveChangesAsync(cancellationToken);
 
-        var reply = await orchestrator.ChatAsync(medicalCase, history, command.Message, cancellationToken);
+        string reply;
+        try
+        {
+            reply = await orchestrator.ChatAsync(medicalCase, history, command.Message, cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException)
+        {
+            reply = "Şu an yanıt üretemiyorum — lütfen birazdan tekrar dener misin? " +
+                    "Acil bir durumun varsa 112'yi araman gerekir.";
+        }
+
         var hizirMessage = medicalCase.AddHizirChatMessage(senderUserId: null, isFromHizir: true, reply);
-
         await cases.SaveChangesAsync(cancellationToken);
         return hizirMessage.ToDto();
     }

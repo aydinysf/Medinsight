@@ -55,6 +55,12 @@ public sealed class HizirOrchestrator(
             context += $"\n---\n[SON ANALİZ] {lastAnalysis.Summary}";
         }
 
+        if (caseData.DocumentsWithText.Count == 0)
+        {
+            context += "\n---\n[NOT] Bu vakada henüz analiz edilebilir belge yok. Hasta rapor/belge " +
+                       "yüklerse ön analiz üretilir; sorarsa Belgeler sekmesinden yüklemesini öner.";
+        }
+
         var reply = await llmClient.ChatAsync(
             new LlmChatRequest(ChatSystemInstructions, context, history, userMessage),
             cancellationToken);

@@ -116,7 +116,8 @@ export const useSendHizirMessage = (caseId: string) => {
   return useMutation({
     mutationFn: (message: string) =>
       api.post<HizirChatMessage, HizirChatMessage>(`/cases/${caseId}/hizir-chat`, { message }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.hizirChat(caseId) }),
+    // onSettled: hata durumunda da yenile — kullanıcı mesajı sunucuda kayıtlı olabilir.
+    onSettled: () => qc.invalidateQueries({ queryKey: KEYS.hizirChat(caseId) }),
   });
 };
 

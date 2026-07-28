@@ -143,6 +143,32 @@ public class HizirOrchestratorTests
     }
 
     [Fact]
+    public async Task Chat_tani_koymam_gibi_olumsuzlama_yonlendirmeye_takilmaz()
+    {
+        // Regresyon: Hızır sınırlarını anlatırken ("tanı koymam") kapsam kapısı
+        // yanlış pozitif veriyor, her yanıt zorunlu yönlendirmeye dönüyordu.
+        var llm = new FakeLlm(
+            new LlmResult("s", [], [], 0.9m, "m", "p"),
+            chatReply: "Ben tanı koymam; belgelerini derleyip doktorunun görebileceği hale getiririm. Tanı koyması doktorunundur.");
+
+        var reply = await Orchestrator(llm).ChatAsync(CaseWithText(), [], "Sen ne işe yarıyorsun?");
+
+        Assert.Contains("belgelerini derleyip", reply);
+    }
+
+    [Fact]
+    public async Task Chat_iddia_kipindeki_tani_ifadesi_yine_engellenir()
+    {
+        var llm = new FakeLlm(
+            new LlmResult("s", [], [], 0.9m, "m", "p"),
+            chatReply: "İncelemem sonucunda tanı koyuyorum: migren.");
+
+        var reply = await Orchestrator(llm).ChatAsync(CaseWithText(), [], "Neyim var?");
+
+        Assert.Equal(Guardrails.ScopeRedirect, reply);
+    }
+
+    [Fact]
     public async Task Chat_uygun_yanit_degismeden_gecer()
     {
         var llm = new FakeLlm(
