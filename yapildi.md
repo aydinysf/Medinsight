@@ -154,3 +154,7 @@
   - Dosya: src/MedInsight.AIOrchestration/{OpenAiCompatibleLlmClient,LlmJsonContract,GeminiLlmClient,DependencyInjection}.cs, tests/MedInsight.AIOrchestration.Tests/LlmJsonContractTests.cs
   - Not: Ürün sahibi kararı — Gemini bölgesel ön ödeme ($25) istediği için Kimi (Moonshot) ile devam. OpenAiCompatibleLlmClient chat/completions + response_format=json_object; Ai:Provider = Stub | Gemini | Kimi | DeepSeek | OpenAiCompatible (Kimi varsayılanları: api.moonshot.ai/v1 + kimi-latest; DeepSeek: api.deepseek.com/v1 + deepseek-chat; BaseUrl/Model config ile ezilebilir). Çıktı sözleşmesi + savunmacı ayrıştırma LlmJsonContract'a taşındı (Gemini ile ortak). Anahtar: Ai:OpenAiCompatible:ApiKey (user-secrets). 131 test geçiyor.
   - KVKK notu: Kimi/DeepSeek Çin merkezli — yalnızca sentetik dev/test verisi; pilotta sağlayıcı yeniden değerlendirilecek.
+
+- [Feature] WP-LLM tamamlandı: OpenAI (gpt-4o-mini) ile gerçek Hızır analizi canlıda doğrulandı
+  - Dosya: docs/business/roadmap.md (durum güncellemesi); kod değişikliği yok — f12b36d'deki OpenAi sağlayıcısı kullanıldı
+  - Not: Ürün sahibi OpenAI API anahtarı temin etti; Ai:Provider=OpenAi + Ai:OpenAiCompatible:ApiKey user-secrets'a kaydedildi. Uçtan uca test: belge yükle → pipeline → gpt-4o-mini analizi (conf 0.7, kaynaklı bulgu, ayırıcı tanı temkinli/boş) → DoctorReview. Model ASCII belge metnini düzgün Türkçeye normalize etti; kaynak izlenebilirliği ve guardrail'ler gerçek çıktıyla da çalışıyor. Sıradaki: Hızır chat (Intent genişletmesi + sohbet UI).

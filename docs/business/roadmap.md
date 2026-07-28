@@ -82,7 +82,7 @@ Backend WP0–WP7 tamamlandıktan sonra ürün sahibiyle netleşen sıra:
 
 1. **FE-1 — Hasta arayüzü** ✅ (React 19 + Vite + Tailwind v4, ADR-017): kayıt/giriş, vaka, belge yükleme, Hızır analizi, doktor önerisi, mesajlaşma, zaman çizelgesi.
 2. **FE-2 — Doktor paneli** ✅ (27 Tem): doktor kaydı + doğrulama belgesi yükleme UI, inceleme kuyruğu (`GET /doctors/me/cases`, ReviewPriority sıralı), AI analiz onay/düzeltme, klinik not, tedavi planı formu, müsaitlik toggle'ı, vaka kapatma/yeniden açma uçları.
-3. **WP-LLM** — Anthropic API anahtarı temin edilecek (maliyet onayına bağlı; tahmin: analiz başına ~1 kuruş mertebesi, aşağıdaki nota bakınız).
+3. **WP-LLM** ✅ (28 Tem) — Sağlayıcı seçilebilir mimari kuruldu (`Ai:Provider` = Stub | Gemini | OpenAi | Kimi | DeepSeek | OpenAiCompatible); ürün sahibi OpenAI anahtarı temin etti, canlıda `gpt-4o-mini` ile gerçek Hızır analizi doğrulandı. Anahtar user-secrets'ta; prod'da secrets manager'a taşınacak (WP8).
 4. **Hızır chat** — WP-LLM sonrası: Intent katmanı genişletmesi + hasta tarafında sohbet UI.
 5. **FE-3 — Admin paneli** ✅ (27 Tem: doğrulama onay/red + belge görüntüleme + audit log) — **OHIF viewer** kısmı WADO-RS ile birlikte ayrı paket olarak bekliyor.
 6. **WP8 — Stabilizasyon** (güvenlik seti, CI/CD, staging, yük testi).
