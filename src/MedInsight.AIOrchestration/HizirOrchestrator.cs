@@ -57,8 +57,25 @@ public sealed class HizirOrchestrator(
 
         if (caseData.DocumentsWithText.Count == 0)
         {
-            context += "\n---\n[NOT] Bu vakada henüz analiz edilebilir belge yok. Hasta rapor/belge " +
+            context += "\n---\n[NOT] Bu vakada henüz analiz edilebilir YAZILI belge yok. Hasta rapor/belge " +
                        "yüklerse ön analiz üretilir; sorarsa Belgeler sekmesinden yüklemesini öner.";
+        }
+
+        if (caseData.GroupedStudies.Count > 0)
+        {
+            // ADR-010: görüntü yorumu yapılmaz — ama eldeki çalışmalar görmezden de gelinmez.
+            context += "\n---\n[NOT] Vakada görüntü çalışmaları (DICOM) var — yukarıda [DICOM] satırlarında özetli. " +
+                       "Sen tıbbi görüntüleri YORUMLAYAMAZSIN; görüntü değerlendirmesi doktorundur. Hasta görüntüyle " +
+                       "ilgili sorarsa: çalışmanın vakada kayıtlı olduğunu, doktorun değerlendireceğini söyle ve " +
+                       "yazılı MR/radyoloji RAPORU varsa PDF olarak yüklemesini öner — rapor metnini analiz edebilirsin.";
+        }
+
+        // ADR-010: deneysel görüntü bulguları ayrı blok, zorunlu disclaimer — tanıya asla bağlanmaz.
+        foreach (var imageFinding in medicalCase.ImageFindings)
+        {
+            context += $"\n---\n[DENEYSEL GÖRÜNTÜ BULGUSU — doğrulanmamış, yalnızca bilgilendirme] {imageFinding.Description} " +
+                       $"(Model: {imageFinding.ModelName}). Bundan bahsedersen deneysel/doğrulanmamış olduğunu ve doktor " +
+                       "değerlendirmesinin esas olduğunu MUTLAKA belirt.";
         }
 
         var reply = await llmClient.ChatAsync(
