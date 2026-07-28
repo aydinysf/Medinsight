@@ -21,7 +21,7 @@ public static class DependencyInjection
             services.Configure<GeminiOptions>(configuration.GetSection(GeminiOptions.SectionName));
             services.AddHttpClient<ILlmClient, GeminiLlmClient>(client => client.Timeout = TimeSpan.FromSeconds(100));
         }
-        else if (provider.ToLowerInvariant() is "kimi" or "deepseek" or "openaicompatible")
+        else if (provider.ToLowerInvariant() is "openai" or "kimi" or "deepseek" or "openaicompatible")
         {
             services.Configure<OpenAiCompatibleOptions>(configuration.GetSection(OpenAiCompatibleOptions.SectionName));
             services.PostConfigure<OpenAiCompatibleOptions>(opts =>
@@ -31,6 +31,7 @@ public static class DependencyInjection
                 {
                     opts.BaseUrl = provider.ToLowerInvariant() switch
                     {
+                        "openai" => "https://api.openai.com/v1",
                         "kimi" => "https://api.moonshot.ai/v1",
                         "deepseek" => "https://api.deepseek.com/v1",
                         _ => opts.BaseUrl,
@@ -41,6 +42,7 @@ public static class DependencyInjection
                 {
                     opts.Model = provider.ToLowerInvariant() switch
                     {
+                        "openai" => "gpt-4o-mini",
                         "kimi" => "kimi-latest",
                         "deepseek" => "deepseek-chat",
                         _ => opts.Model,
